@@ -1,0 +1,14 @@
+language: python
+python:
+- '2.7'
+install: pip install -r requirements.txt --use-mirrors
+script: python setup.py test
+deploy:
+  provider: pypi
+  user: azavea
+  password:
+    secure: DKRSfxeZk9f/cRHNfEiUT31HY8yydSlbRh3827a6YFpPH35G9t8VVJvCYeZcwntzkTxhgeKo0/0PkYSYeJzO+yxUyYE8vmYy/NyurUqpKjF3dOOqyUciq4G/Hry5kS3X5SJH+rZo4N50C66UBrM6fq3w3agw4f/ZMw9PV0AjvYwVULTzZZ0HoH+QfD2Bv/W9cEkkAw2FOOvUwcwliY1Pv7LhsL9Fw6Nq5N8lGeSqX9mThzPaRoVx1E680nj4UNiW6u6PtstoRJEpyVOYfiKtyQDSx7+b9tL5gCHFvNa1/0HifY8Zm7nvti9L1G1rODBM/0w2oqs/6x0OFl+MnhCHWQX321FwKh6x3Vk7PJrTG1lKOrGMmaUDrWqj5wPMJXbY8Xa/WnL95tq5X23Ozym6+nWt6dYMZUFbcf7Rl4/7ATyf8i26hjYcSWzYFJpzStHIh+wV/RA2XWrTEm25GysSBZmvdFT8Qd07zDQ6kCY0zxJjqRXYx42NHqd5KQUXRownKXpIqwxXdbI1qxJfgjKOdTbk19sL5JaK/y8LpMU7bWEpn5leD6TmYRLHJ9gP/DT8w5vFG/HcoqqmSP/3dB0Uk8u5KSuwOh8TV/mWHGhXb/uYYJqvsLrpmcaha5WfHN67wkLU90fZxKhLeZGPvfY2ycP4IXyvi5SFwDewGZZSoKI=
+  distributions: sdist bdist_wheel
+  on:
+    tags: true
+    repo: WikiWatershed/rapid-watershed-delineation
