@@ -1,3 +1,7 @@
+## 0.1.2
+
+- Change password.
+
 ## 0.1.1
 
 - Initial development release.

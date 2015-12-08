@@ -13,7 +13,7 @@ tests_require = ['nose >= 1.3.4']
 
 setup(
     name='rapid_watershed_delineation',
-    version='0.1.1',
+    version='0.1.2',
     description='A Python implementation of Rapid Watershed Delineation.',
     long_description=long_description,
     url='https://github.com/WikiWatershed/rapid-watershed-delineation',
