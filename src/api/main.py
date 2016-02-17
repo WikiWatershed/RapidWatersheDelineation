@@ -32,6 +32,8 @@ def run_rwd(lat, lon):
     """
     snapping = request.args.get('snapping', '1')
     maximum_snap_distance = request.args.get('maximum_snap_distance', '10000')
+    simplify = str(request.args.get('simplify', 0.0001))
+
     num_processors = '1'
     data_path = '/opt/rwd-data'
 
@@ -68,7 +70,7 @@ def run_rwd(lat, lon):
         input_shp_path = os.path.join(output_path, 'New_Outlet.shp')
 
         output = {
-            'watershed': load_json(wshed_shp_path, output_path),
+            'watershed': load_json(wshed_shp_path, output_path, simplify),
             'input_pt': load_json(input_shp_path, output_path)
         }
 
@@ -80,10 +82,17 @@ def run_rwd(lat, lon):
         return error_response(exc.message)
 
 
-def load_json(shp_path, output_path):
+def load_json(shp_path, output_path, simplify_tolerance=None):
     name = '%s.json' % uuid.uuid4().hex
     output_json_path = os.path.join(output_path, name)
-    call(['ogr2ogr', output_json_path, shp_path, '-f', 'GeoJSON'])
+    ogr_cmd = ['ogr2ogr', output_json_path, shp_path, '-f', 'GeoJSON']
+
+    # Simplify the polygon as we convert to JSON if there
+    # is a tolerance setting
+    cmd = ogr_cmd + ['-simplify', simplify_tolerance] if simplify_tolerance \
+        else ogr_cmd
+
+    call(cmd)
 
     try:
         with open(output_json_path, 'r') as output_json_file:
