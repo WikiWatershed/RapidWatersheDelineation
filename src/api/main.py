@@ -7,7 +7,7 @@ import tempfile
 import uuid
 import traceback
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 from rwd.Rapid_Watershed_Delineation import Point_Watershed_Function
 
@@ -24,6 +24,11 @@ def error_response(error_message, stack_trace):
         'stackTrace': stack_trace
     })
     return response, 400
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
 
 
 @app.route('/rwd/<lat>/<lon>', methods=['GET'])
