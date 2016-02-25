@@ -51,25 +51,19 @@ def run_rwd(lat, lon):
 
     try:
         Point_Watershed_Function(
-            lat,
             lon,
+            lat,
             snapping,
             maximum_snap_distance,
             data_path,
             'Delaware_Ocean_stream_dissolve',
             'delaware_gw_5000_diss',
+            'Delaware_5000_GW_ID.txt',
             'Delaware_Missing_Coast_Watershed',
-            'DelDEMGeo2fel.tif',
-            'DelDEMGeo2Max_elv_upslope.tif',
-            'DelDEMGeo2ad8_slope_weighted.tif',
-            'DelDEMGeo2ad8.tif',
-            'DelDEMGeo2plen.tif',
-            'DelDEMGeo2tlen_peuker.tif',
-            'DelDEMGeo2gord_peuker.tif',
             num_processors,
             '/opt/taudem',
             '/usr/bin/',
-            output_path
+            output_path,
         )
 
         # The Watershed and input coordinates (possibly snapped to stream)
