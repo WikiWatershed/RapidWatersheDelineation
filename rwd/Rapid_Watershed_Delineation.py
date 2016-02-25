@@ -17,14 +17,8 @@ def Point_Watershed_Function(
         Pre_process_TauDEM_dir,
         Ocean_stream_file,
         gage_watershed_file,
+        gage_watershed_ID_file,
         coast_watershed_file,
-        elev_file,
-        Max_elev_file,
-        Ad8_weigthed_file,
-        Ad8_file,
-        plen_file,
-        tlen_file,
-        gord_file,
         np,
         TauDEM_dir,
         MPI_dir,
@@ -34,13 +28,6 @@ def Point_Watershed_Function(
     Y = float(latitude)
     point1 = Point(X, Y)
     dir_main = str(Pre_process_TauDEM_dir) + '/Main_Watershed'
-    elev_file_with_path = os.path.join(dir_main, elev_file)
-    Max_elev_file_with_path = os.path.join(dir_main, Max_elev_file)
-    Ad8_weigthed_file_with_path = os.path.join(dir_main, Ad8_weigthed_file)
-    Ad8_file_with_path = os.path.join(dir_main, Ad8_file)
-    gord_file_with_path = os.path.join(dir_main, gord_file)
-    plen_file_with_path = os.path.join(dir_main, plen_file)
-    tlen_file_with_path = os.path.join(dir_main, tlen_file)
     Main_watershed = gage_watershed_file
     Coast_watershed = coast_watershed_file
     Ocean_Stream = Ocean_stream_file
@@ -83,14 +70,19 @@ def Point_Watershed_Function(
         subwatershed_dir = str(Pre_process_TauDEM_dir) + \
             '/Subwatershed_ALL/' + dir_name + str(int(ID))
         dist_file = sub_file_name + str(int(ID)) + "dist.tif"
-        network_file = sub_file_name + str(int(ID)) + "network.shp"
-        complimentary_Network_file = "Complimentary_watershed" + \
-            str(int(ID)) + "network.shp"
-        #src_filename =os.path.join(dir1,"subwatershed_4dist.tif")
         src_filename = os.path.join(subwatershed_dir, dist_file)
         shp_filename = os.path.join(Output_dir, "mypoint.shp")
         distance_stream = extract_value_from_raster(src_filename, shp_filename)
         Grid_Name = sub_file_name + str(int(ID))
+        ## add file name for attributes
+        elev_file=sub_file_name+str(int(ID))+"dm.tif"
+        max_elev_file=sub_file_name+str(int(ID))+"mxdm.tif"
+        Ad8_weighted_file=sub_file_name+str(int(ID))+"ad8wg.tif"
+        Ad8_file=sub_file_name+str(int(ID))+"ad8.tif"
+        gord_file=sub_file_name+str(int(ID))+"gord.tif"
+        plen_file=sub_file_name+str(int(ID))+"plen.tif"
+        tlen_file=sub_file_name+str(int(ID))+"tlen.tif"
+
     if(ID_C[0] > 0):
         dir_name = 'Subwatershed_coast'
         sub_file_name = "subwatershed_coast_"
@@ -98,6 +90,14 @@ def Point_Watershed_Function(
             '/Subwatershed_ALL/' + dir_name + str(int(ID_C[0]))
         Grid_Name = sub_file_name + str(int(ID_C[0]))
         distance_stream = -1
+        ## add file for attributes
+        elev_file=sub_file_name+str(int(ID_C[0]))+"dm.tif"
+        max_elev_file=sub_file_name+str(int(ID_C[0]))+"mxdm.tif"
+        Ad8_weighted_file=sub_file_name+str(int(ID_C[0]))+"ad8wg.tif"
+        Ad8_file=sub_file_name+str(int(ID_C[0]))+"ad8.tif"
+        gord_file=sub_file_name+str(int(ID_C[0]))+"gord.tif"
+        plen_file=sub_file_name+str(int(ID_C[0]))+"plen.tif"
+        tlen_file=sub_file_name+str(int(ID_C[0]))+"tlen.tif"
 
     MPH_dir = MPI_dir
     TauDEM_dir = TauDEM_dir
@@ -123,7 +123,6 @@ def Point_Watershed_Function(
             print(cmd)
             os.system(cmd)
             os.chdir(Output_dir)
-            define_projection('Outlets_moved', 'New_Outlet', infile_crs[0])
             outlet_moved_file = os.path.join(Output_dir, "New_Outlet.shp")
         else:
             os.chdir(Output_dir)
@@ -144,22 +143,19 @@ def Point_Watershed_Function(
             Output_dir,
             outlet_moved_file,
             New_Gage_watershed_Name))
-    new_watershed_raster = os.path.join(
-        Output_dir, New_Gage_watershed_Name + ".tif")
-    # polygonize watershedraster to shapefile
-    Raster_to_Polygon(new_watershed_raster, New_Gage_watershed_Name)
-    New_Gage_watershed_Dissolve = "local_subwatershed_dissolve"
-    polygon_dissolve(
-        New_Gage_watershed_Name,
-        New_Gage_watershed_Dissolve,
-        infile_crs[0])
-    # new_watershed_shape=os.path.join(dir2,New_Gage_watershed_Name+".shp")
-    #print("--- %s seconds ---" % (time.time() - start_time))
-    #start_time = time.time()
-    New_Gage_watershed_Dissolve = New_Gage_watershed_Name + "_dissolve"
+    # raster to ploygon using ogr2ogr command line
+    os.chdir(Output_dir)
+    raster_polygon='gdal_polygonize.py local_subwatershed.tif -b 1 -f "ESRI Shapefile" local_subwatershed.shp local_subwatershed GRIDCODE'
+    os.system(raster_polygon)
+    # dissolve polygon using ogr2ogr
+    poly_dissolv='ogr2ogr local_subwatershed_dissolve.shp local_subwatershed.shp -dialect sqlite -sql'+ " "+ ' "SELECT GRIDCODE, ST_Union(geometry) as geometry FROM '+" "+" 'local_subwatershed' " + " " +' GROUP BY GRIDCODE" '+ '  -nln results -overwrite'
+    print(poly_dissolv)
+    os.system(poly_dissolv)
+    New_Gage_watershed_Dissolve=New_Gage_watershed_Name+ "_dissolve"
     if(ID > 0):
+        up_ID=upstream_gagewatershed(gage_watershed_ID_file,ID,dir_main)
         complimentary_res = Reach_Upstream_Edge(
-            New_Gage_watershed_Dissolve, Main_watershed, ID, dir_main, Output_dir)
+            New_Gage_watershed_Dissolve,up_ID,Pre_process_TauDEM_dir,dir_name,ID,Output_dir)
         compli_watershed_ID = [i for i in complimentary_res if i > 0]
         len_comp = len(compli_watershed_ID)
     else:
@@ -173,7 +169,6 @@ def Point_Watershed_Function(
         lc_watershed = os.path.join(
             Output_dir, New_Gage_watershed_Dissolve + '.shp')
         sub_water_file.append(lc_watershed)
-        w = shapefile.Writer()
         for i in compli_watershed_ID:
             subwater_dir = str(Pre_process_TauDEM_dir) + \
                 '/Subwatershed_ALL/Subwatershed' + str(int(i))
@@ -182,41 +177,38 @@ def Point_Watershed_Function(
             if os.path.isfile(com_file):
                 sub_water_file.append(com_file)
 
-        # input_watersheds=sub_water_file
-        for f in sub_water_file:
-            r = shapefile.Reader(f)
-            w._shapes.extend(r.shapes())
-            w.records.extend(r.records())
-        w.fields = list(r.fields)
-        w.save(merged_watershed)
-        print("--- %s seconds ---" % (time.time() - start_time))
-        #start_time = time.time()
-        # polygon_dissolve('point_watershed','point_watershed1',projection)
-        polygon_dissolve_byfield('point_watershed.shp', 'point_watershed1.shp')
-        #print("--- %s seconds ---" % (time.time() - start_time))
+        os.chdir(Output_dir)
+        for x in range(1, len(sub_water_file)):
+          merge_watrshed='ogr2ogr -update -append'+ " "+sub_water_file[0]+ " " + sub_water_file[x]
+          os.system(merge_watrshed)
+        ## dissolve watersheds using ogr2ogr command line
+        dissolve_cmd='ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp -dialect sqlite -sql'+ " "+ ' "SELECT GRIDCODE ,ST_Union(geometry) as geometry FROM '+" "+" 'local_subwatershed_dissolve' " + " " +' GROUP BY GRIDCODE" '
+        print(dissolve_cmd)  
+        os.system(dissolve_cmd)
 
     else:
         flag = "Up stream edge was Not reached"
         print flag
         # lc_watershed=os.path.join(Output_dir,New_Gage_watershed_Dissolve+'.shp')
         # polygon_dissolve(New_Gage_watershed_Dissolve,'point_watershed1',projection)
-        polygon_dissolve_byfield(
-            New_Gage_watershed_Dissolve + '.shp',
-            'point_watershed1.shp')
+        os.chdir(Output_dir)
+        dissolve_cmd='ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp -dialect sqlite -sql'+ " "+ ' "SELECT GRIDCODE ,ST_Union(geometry) as geometry FROM '+" "+" 'local_subwatershed_dissolve' " + " " +' GROUP BY GRIDCODE" '
+        print(dissolve_cmd)
+        os.system(dissolve_cmd)
 
-    #print("--- %s seconds ---" % (time.time() - start_time))
-    # start_time = time.time()
+
     Get_Watershed_Attributes(
         'New_Outlet.shp',
-        'point_watershed1',
-        projection,
-        elev_file_with_path,
-        Max_elev_file_with_path,
-        Ad8_weigthed_file_with_path,
-        Ad8_file_with_path,
-        plen_file_with_path,
-        tlen_file_with_path,
-        gord_file_with_path)
+        'New_Point_Watershed',
+        elev_file,
+        max_elev_file,
+        Ad8_weighted_file,
+        Ad8_file,
+        plen_file,
+        tlen_file,
+        gord_file,
+        subwatershed_dir,
+        Output_dir)
     pattern = "^mypoint"
     path = Output_dir
     remove_file_directory(path, pattern)
