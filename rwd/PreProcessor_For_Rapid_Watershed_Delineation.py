@@ -16,7 +16,14 @@ def PreProcess_TauDEM_for_On_Fly_WatershedDelineation(
         gw_file,
         src_file,
         src_file_coast,
-        dist_file):
+        dist_file,
+        elev_file,
+        max_elev_file,
+        Ad8_weighted_file,
+        Ad8_file,
+        plen_file,
+        tlen_file,
+        gord_file):
     input_dir1 = input_dir_name + "/Main_Watershed"
     infile = input_dir1 + "/" + watershed_file
     coast_file = input_dir1 + "/" + watershed_coast
@@ -212,6 +219,30 @@ def PreProcess_TauDEM_for_On_Fly_WatershedDelineation(
             distance_out_file = os.path.join(
                 dir, 'subwatershed_' + str(f['properties']['GRIDCODE']) + "dist.tif")
 
+
+            elevdir = os.path.join(main_dir,elev_file)
+            elev_out_file = os.path.join(
+                dir, 'subwatershed_' + str(f['properties']['GRIDCODE']) + "dm.tif")
+            max_elevdir = os.path.join(main_dir, max_elev_file)
+            max_elev_file_out_file = os.path.join(
+                dir, 'subwatershed_' + str(f['properties']['GRIDCODE']) + "mxdm.tif")
+            ad8dir = os.path.join(main_dir, Ad8_file)
+            ad8_out_file = os.path.join(
+                dir, 'subwatershed_' + str(f['properties']['GRIDCODE']) + "ad8.tif")
+            ad8weightdir = os.path.join(main_dir, Ad8_weighted_file)
+            ad8weight_out_file = os.path.join(
+                dir, 'subwatershed_' + str(f['properties']['GRIDCODE']) + "ad8wg.tif")
+
+            plendir = os.path.join(main_dir, plen_file)
+            plen_out_file = os.path.join(
+                dir, 'subwatershed_' + str(f['properties']['GRIDCODE']) + "plen.tif")
+            tlendir = os.path.join(main_dir, tlen_file)
+            tlen_out_file = os.path.join(
+                dir, 'subwatershed_' + str(f['properties']['GRIDCODE']) + "tlen.tif")
+            gorddir = os.path.join(main_dir, gord_file)
+            gord_out_file = os.path.join(
+                dir, 'subwatershed_' + str(f['properties']['GRIDCODE']) + "gord.tif")
+
             input = fiona.open(outputBufferfn, 'r')
             xmin = str(input.bounds[0])
             ymin = str(input.bounds[1])
@@ -228,10 +259,34 @@ def PreProcess_TauDEM_for_On_Fly_WatershedDelineation(
             command_distance = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + " -dstnodata -32768.00 -cutline " + \
                 outputBufferfn + " -cl " + layer_name + " " + distancedir + " " + distance_out_file
 
+            command_elev = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + \
+                " -dstnodata -32768 -cutline " + outputBufferfn + " -cl " + layer_name + " " + elevdir + " " + elev_out_file
+            command_maxelev = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + " -dstnodata -32768 -cutline " + \
+                outputBufferfn + " -cl " + layer_name + " " + max_elevdir + " " + max_elev_file_out_file
+            command_ad8 = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + \
+                " -dstnodata -32768 -cutline " + outputBufferfn + " -cl " + layer_name + " " + ad8dir + " " + ad8_out_file
+            command_ad8wg = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + " -dstnodata -32768.00 -cutline " + \
+                outputBufferfn + " -cl " + layer_name + " " + ad8weightdir + " " + ad8weight_out_file
+
+            command_plen= "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + " -dstnodata -32768 -cutline " + \
+                outputBufferfn + " -cl " + layer_name + " " + plendir + " " + plen_out_file
+            command_tlen = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + \
+                " -dstnodata -32768 -cutline " + outputBufferfn + " -cl " + layer_name + " " +tlendir+ " " + tlen_out_file
+            command_gord = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + " -dstnodata -32768.00 -cutline " + \
+                outputBufferfn + " -cl " + layer_name + " " + gorddir + " " + gord_out_file
+
+
             os.system(command_flow)
             os.system(command_subw)
             os.system(command_stream)
             os.system(command_distance)
+            os.system(command_elev)
+            os.system(command_maxelev)
+            os.system(command_ad8)
+            os.system(command_ad8wg)
+            os.system(command_plen)
+            os.system(command_tlen)
+            os.system(command_gord)
             input.close()
 
     if os.path.isfile(coast_file):
@@ -257,6 +312,31 @@ def PreProcess_TauDEM_for_On_Fly_WatershedDelineation(
                 streamdir = os.path.join(main_dir, stream_file)
                 stream_out_file = os.path.join(
                     dir, 'subwatershed_coast_' + str(f['properties']['GRIDCODE']) + "src1.tif")
+
+                elevdir = os.path.join(main_dir,elev_file)
+                elev_out_file = os.path.join(
+                    dir, 'subwatershed_coast_' + str(f['properties']['GRIDCODE']) + "dm.tif")
+                max_elevdir = os.path.join(main_dir, max_elev_file)
+                max_elev_file_out_file = os.path.join(
+                    dir, 'subwatershed_coast_' + str(f['properties']['GRIDCODE']) + "mxdm.tif")
+                ad8dir = os.path.join(main_dir, Ad8_file)
+                ad8_out_file = os.path.join(
+                    dir, 'subwatershed_coast_' + str(f['properties']['GRIDCODE']) + "ad8.tif")
+                ad8weightdir = os.path.join(main_dir, Ad8_weighted_file)
+                ad8weight_out_file = os.path.join(
+                    dir, 'subwatershed_coast_' + str(f['properties']['GRIDCODE']) + "ad8wg.tif")
+
+                plendir = os.path.join(main_dir, plen_file)
+                plen_out_file = os.path.join(
+                    dir, 'subwatershed_coast_' + str(f['properties']['GRIDCODE']) + "plen.tif")
+                tlendir = os.path.join(main_dir, tlen_file)
+                tlen_out_file = os.path.join(
+                    dir, 'subwatershed_coast_' + str(f['properties']['GRIDCODE']) + "tlen.tif")
+                gorddir = os.path.join(main_dir, gord_file)
+                gord_out_file = os.path.join(
+                    dir, 'subwatershed_coast_' + str(f['properties']['GRIDCODE']) + "gord.tif")
+
+
                 input = fiona.open(outputBufferfn, 'r')
                 xmin = str(input.bounds[0])
                 ymin = str(input.bounds[1])
@@ -268,8 +348,34 @@ def PreProcess_TauDEM_for_On_Fly_WatershedDelineation(
                 command_stream = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + \
                     " -dstnodata -32768 -cutline " + outputBufferfn + " -cl " + layer_name + " " + streamdir + " " + stream_out_file
 
+                command_elev = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + \
+                    " -dstnodata -32768 -cutline " + outputBufferfn + " -cl " + layer_name + " " + elevdir + " " + elev_out_file
+                command_maxelev = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + " -dstnodata -32768 -cutline " + \
+                    outputBufferfn + " -cl " + layer_name + " " + max_elevdir + " " + max_elev_file_out_file
+                command_ad8 = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + \
+                    " -dstnodata -32768 -cutline " + outputBufferfn + " -cl " + layer_name + " " + ad8dir + " " + ad8_out_file
+                command_ad8wg = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + " -dstnodata -32768.00 -cutline " + \
+                    outputBufferfn + " -cl " + layer_name + " " + ad8weightdir + " " + ad8weight_out_file
+
+                command_plen= "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + " -dstnodata -32768 -cutline " + \
+                    outputBufferfn + " -cl " + layer_name + " " + plendir + " " + plen_out_file
+                command_tlen = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + \
+                    " -dstnodata -32768 -cutline " + outputBufferfn + " -cl " + layer_name + " " +tlendir+ " " + tlen_out_file
+                command_gord = "gdalwarp -te " + xmin + " " + ymin + " " + xmax + " " + ymax + " -dstnodata -32768.00 -cutline " + \
+                    outputBufferfn + " -cl " + layer_name + " " + gorddir + " " + gord_out_file
+
+
+
+
                 os.system(command_flow)
                 os.system(command_stream)
+                os.system(command_elev)
+                os.system(command_maxelev)
+                os.system(command_ad8)
+                os.system(command_ad8wg)
+                os.system(command_plen)
+                os.system(command_tlen)
+                os.system(command_gord)
 
                 input.close()
 # #

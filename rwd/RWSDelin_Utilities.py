@@ -192,6 +192,26 @@ def complementary_gagewatershed(gageIDfile, num):
     return (upstream_watershed_ID)
 
 
+def upstream_gagewatershed(gageIDfile,num,dir_main):
+   os.chdir(dir_main)
+   data=np.loadtxt(gageIDfile, skiprows=1)
+   df = pd.DataFrame(data = data, columns=['id', 'iddown'])
+   up=[]
+   if num == -1:
+      up.append(-1)
+   else:
+      mask = df[['iddown']].isin([num]).all(axis=1)
+      data_mask=df.ix[mask]
+      id_all=data_mask['id']
+      length_data_mask=len(id_all)
+      data_as_matrix=np.asarray(id_all)
+      up.append(data_as_matrix)
+
+   return (data_as_matrix)
+
+
+
+
 def extract_value_from_raster(rasterfile, pointshapefile):
     #src_filename = 'E:\\USU_Research_work\\MMW_PROJECT\\Point_watershed\\A1_test\\Subwatershed4\\subwatershed_4dist.tif'
     #shp_filename = 'E:\\USU_Research_work\\MMW_PROJECT\\Point_watershed\\A1_test\\Test1\\mypoint_proj.shp'
@@ -217,43 +237,43 @@ def extract_value_from_raster(rasterfile, pointshapefile):
 
 def Reach_Upstream_Edge(
         New_Gage_watershed_Dissolve,
-        Main_watershed,
+        up_ID,
+        Pre_process_TauDEM_dir,
+        dir_name,
         ID,
-        dir_main,
         out_dir):
-    os.chdir(dir_main)
-    file = Main_watershed + '.shp'
-    file1 = ogr.Open(file)
-    layer1 = file1.GetLayerByName(Main_watershed)
     os.chdir(out_dir)
-    file2 = New_Gage_watershed_Dissolve + '.shp'
-    file11 = ogr.Open(file2)
+    file2=New_Gage_watershed_Dissolve+'.shp'
+    file11=ogr.Open(file2)
     layer12 = file11.GetLayerByName(New_Gage_watershed_Dissolve)
-    polygon2 = layer12.GetNextFeature()
+    polygon2= layer12.GetNextFeature()
     geomPolygon2 = loads(polygon2.GetGeometryRef().ExportToWkb())
-    polygon1 = layer1.GetNextFeature()
-    g = len(layer1)
-    subwatershed_ID = ID
-    compli_ID = []
-    while polygon1 is not None:
+
+    subwatershed_ID=ID
+    compli_ID=[]
+    for i in range(0,len(up_ID)):
+
+        subwatershed_dir=str(Pre_process_TauDEM_dir)+'/Subwatershed_ALL/'+dir_name+str(int(up_ID[i]))
+        os.chdir(subwatershed_dir)
+        inputfn = 'subwatershed_'+str(int(up_ID[i]))+'.shp'
+        file1=ogr.Open(inputfn)
+        layer1 = file1.GetLayerByName('subwatershed_'+str(int(up_ID[i])))
+        polygon1= layer1.GetNextFeature()
         geomPolygon = loads(polygon1.GetGeometryRef().ExportToWkb())
         if geomPolygon.intersects(geomPolygon2):
-            geomPoly = geomPolygon.difference(geomPolygon2)
-            name1 = polygon1.GetField("GRIDCODE")
-            print (name1)
-            if(name1 != subwatershed_ID):
-                x1 = round(list(geomPolygon.centroid.xy[0])[0], 6)
-                y1 = round(list(geomPolygon.centroid.xy[1])[0], 6)
-                x2 = round(list(geomPoly.centroid.xy[0])[0], 6)
-                y2 = round(list(geomPoly.centroid.xy[1])[0], 6)
-                if((x1 != x2) | (y1 != y2)):
-                    compli_ID.append(name1)
-                    print (name1)
-                else:
-                    compli_ID.append(-1)
-
-        polygon1 = layer1.GetNextFeature()
-
+          geomPoly=geomPolygon.difference(geomPolygon2)
+          name1 = polygon1.GetField("GRIDCODE")
+         # print (name1)
+          if(name1!=subwatershed_ID):
+            x1=round(list(geomPolygon.centroid.xy[0])[0],5)
+            y1=round(list(geomPolygon.centroid.xy[1])[0],5)
+            x2=round(list(geomPoly.centroid.xy[0])[0],5)
+            y2=round(list(geomPoly.centroid.xy[1])[0],5)
+            if((x1!=x2)|(y1!=y2)):
+                compli_ID.append(name1)
+                #print (name1)
+            else:
+                compli_ID.append(-1)
     return compli_ID
 
 
@@ -304,7 +324,7 @@ def MOVEOUTLETTOSTREAMS(
     commands.append("-o")
     commands.append(os.path.join(Output_dir, Outlet_Point + ".shp"))
     commands.append("-om")
-    commands.append(os.path.join(Output_dir, "Outlets_moved.shp"))
+    commands.append(os.path.join(Output_dir, "New_Outlet.shp"))
     commands.append("-md")
     commands.append(str(Distance_thresh))
     fused_command = ''.join(['"%s" ' % c for c in commands])
@@ -472,90 +492,65 @@ def split(line_string, point):
 def Get_Watershed_Attributes(
         Outlet_Point,
         Point_Watershed,
-        projection,
-        elev_file_with_path,
-        Max_elev_file_with_path,
-        Ad8_weigthed_file_with_path,
-        Ad8_file_with_path,
-        plen_file_with_path,
-        tlen_file_with_path,
-        gord_file_with_path):
+        elev_file,
+        Max_elev_file,
+        Ad8_weigthed_file,
+        Ad8_file,
+        plen_file,
+        tlen_file,
+        gord_file,
+        dir_subwatershed,
+        out_dir):
 
-    dataset = gdal.Open(gord_file_with_path)
-    prj = dataset.GetProjection()
-    srs = osr.SpatialReference(wkt=prj)
-    if srs.IsProjected:
-        geoproj = 1
+    os.chdir(out_dir)
+    elev_file_with_path=os.path.join(dir_subwatershed,elev_file)
+    Max_elev_file_with_path=os.path.join(dir_subwatershed,Max_elev_file)
+    Ad8_weigthed_file_with_path=os.path.join(dir_subwatershed,Ad8_weigthed_file)
+    Ad8_file_with_path=os.path.join(dir_subwatershed,Ad8_file)
+    gord_file_with_path=os.path.join(dir_subwatershed,gord_file)
+    plen_file_with_path=os.path.join(dir_subwatershed,plen_file)
+    tlen_file_with_path=os.path.join(dir_subwatershed,tlen_file)
 
-    if(geoproj == 1):
-        reproject(Point_Watershed, 'temp_watershed_Alber', ogr.wkbPolygon)
+    Basin_length=extract_value_from_raster(plen_file_with_path,Outlet_Point)
+    Stream_Order=extract_value_from_raster(gord_file_with_path,Outlet_Point)
+    Total_stream_length= extract_value_from_raster(tlen_file_with_path,Outlet_Point)
+    Max_elev=extract_value_from_raster(Max_elev_file_with_path,Outlet_Point)
+    outlet_elev=extract_value_from_raster(elev_file_with_path,Outlet_Point)
+    Ad8_weighted=extract_value_from_raster(Ad8_weigthed_file_with_path,Outlet_Point)
+    Ad8=extract_value_from_raster(Ad8_file_with_path,Outlet_Point)
+    Area=Ad8*10.3*7.85/(1000*1000) ## use Spehorid.R function for calculating dxc and dyc . choose median value for dyc and dxc which is approximations
+    Basin_Relief= Max_elev-outlet_elev
+    Relief_Ratio=Basin_Relief/Basin_length
+    Avg_slope=Ad8_weighted/Ad8
+    Drainage_Density=Total_stream_length/(Area*1000)
+    Length_Overland_flow=1/(2*Drainage_Density)
+    source = ogr.Open(Point_Watershed+".shp", 1)
+    layer = source.GetLayer()
+    layer_defn = layer.GetLayerDefn()
+    new_field = ogr.FieldDefn('Area', ogr.OFTReal)
+    layer.CreateField(new_field)
+    new_field = ogr.FieldDefn('BasinLen', ogr.OFTReal)
+    layer.CreateField(new_field)
+    new_field = ogr.FieldDefn('Strord', ogr.OFTReal)
+    layer.CreateField(new_field)
+    new_field = ogr.FieldDefn('StrLen', ogr.OFTReal)
+    layer.CreateField(new_field)
+    new_field = ogr.FieldDefn('DrnDen',ogr.OFTReal)
+    layer.CreateField(new_field)
+    new_field = ogr.FieldDefn('AvgOLF', ogr.OFTReal)
+    layer.CreateField(new_field)
+    new_field = ogr.FieldDefn('BR',ogr.OFTReal)
+    layer.CreateField(new_field)
+    new_field = ogr.FieldDefn('RR', ogr.OFTReal)
+    layer.CreateField(new_field)
+    new_field = ogr.FieldDefn('Avgslp', ogr.OFTReal)
+    layer.CreateField(new_field)
+    feature = layer.GetFeature(0)
+    my_at_val=[0,Area,float(Basin_length)/1000.00,Stream_Order, float(Total_stream_length/1000.0),float(Drainage_Density),float(Length_Overland_flow),float(Basin_Relief),float(Relief_Ratio), float(Avg_slope) ]
+    for i in range(1, 10):
 
-    src_sub = ogr.Open('temp_watershed_Alber' + '.shp')
-    sub_layer = src_sub.GetLayerByName('temp_watershed_Alber')
-    # (because lenght of layer =1, else you need "for element in layers: ...")
-    sub_element = sub_layer[0]
-    sub_geom = loads(sub_element.GetGeometryRef().ExportToWkb())
-    Area = sub_geom.area / 1000000  # in km2
-    Peri = sub_geom.length / 1000  # km
-    Basin_length = extract_value_from_raster(plen_file_with_path, Outlet_Point)
-    Stream_Order = extract_value_from_raster(gord_file_with_path, Outlet_Point)
-    Total_stream_length = extract_value_from_raster(
-        tlen_file_with_path, Outlet_Point)
-    Max_elev = extract_value_from_raster(Max_elev_file_with_path, Outlet_Point)
-    outlet_elev = extract_value_from_raster(elev_file_with_path, Outlet_Point)
-    Ad8_weighted = extract_value_from_raster(
-        Ad8_weigthed_file_with_path, Outlet_Point)
-    Ad8 = extract_value_from_raster(Ad8_file_with_path, Outlet_Point)
-    Basin_Relief = Max_elev - outlet_elev
-    Relief_Ratio = Basin_Relief / Basin_length
-    Avg_slope = Ad8_weighted / Ad8
-    Drainage_Density = Total_stream_length / (Area * 1000)
-    Length_Overland_flow = 1 / (2 * Drainage_Density)
+        feature.SetField( i, float(my_at_val[i]))
 
-    # using raster stats failed for big watershed which is easy for getting min,max value
-    # so we need to extract raster than calculate statistice based on the
-    # extractign raster
-    with fiona.open('point_watershed1.shp', 'r') as source:
+    layer.SetFeature(feature)
 
-        # Copy the source schema and add two new properties.
-        sink_schema = source.schema.copy()
-        sink_schema['properties']['Area'] = 'float'
-        sink_schema['properties']['Peri'] = 'float'
-        sink_schema['properties']['LgUpStr'] = 'float'
-        sink_schema['properties']['StrOrd'] = 'int'
-        sink_schema['properties']['TOLSr'] = 'float'
-        sink_schema['properties']['DD'] = 'float'
-        sink_schema['properties']['AvgOLF'] = 'float'
-        sink_schema['properties']['BR'] = 'float'
-        sink_schema['properties']['RR'] = 'float'
-        sink_schema['properties']['Avgslp'] = 'float'
-    # Create a sink for processed features with the same format and
-    # coordinate reference system as the source.
-        with fiona.open(
-            'New_Point_Watershed.shp', 'w',
-            crs=projection,
-            driver=source.driver,
-            schema=sink_schema,
-        ) as sink:
-
-            for f in source:
-
-                g = f['geometry']
-                assert g['type'] == "Polygon"
-                f['properties'].update(
-                    Area=Area,
-                    Peri=Peri,
-                    LgUpStr=float(Basin_length),
-                    StrOrd=int(Stream_Order),
-                    TOLSr=float(Total_stream_length / 1000),  # in km
-                    DD=float(Drainage_Density),
-                    AvgOLF=float(Length_Overland_flow),
-                    BR=float(Basin_Relief),
-                    RR=float(Relief_Ratio),
-                    Avgslp=float(Avg_slope))
-
-                sink.write(f)
-
-    filelist = glob.glob("*.tif")
-    for f in filelist:
-        os.remove(f)
+    source = None
