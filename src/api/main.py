@@ -5,8 +5,9 @@ from subprocess import call
 import json
 import tempfile
 import uuid
+import traceback
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 from rwd.Rapid_Watershed_Delineation import Point_Watershed_Function
 
@@ -17,10 +18,17 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.StreamHandler())
 
 
-def error_response(error_message):
-    response = jsonify(error=error_message)
-    response.status_code = 400
-    return response
+def error_response(error_message, stack_trace):
+    response = jsonify({
+        'error': error_message,
+        'stackTrace': stack_trace
+    })
+    return response, 400
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
 
 
 @app.route('/rwd/<lat>/<lon>', methods=['GET'])
@@ -79,7 +87,8 @@ def run_rwd(lat, lon):
 
     except Exception as exc:
         log.exception('Error running Point_Watershed_Function')
-        return error_response(exc.message)
+        stack_trace = traceback.format_exc()
+        return error_response(exc.message, stack_trace)
 
 
 def load_json(shp_path, output_path, simplify_tolerance=None):
