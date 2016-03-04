@@ -1,3 +1,10 @@
+## 1.0.0
+
+- Merge upstream changes to speed up RWD functions
+- Simplify watershed shapes
+- Include stack trace in web API responses
+- Add 404 page to web API
+
 ## 0.3.0
 
 - Preserve input and snapped points in API results
