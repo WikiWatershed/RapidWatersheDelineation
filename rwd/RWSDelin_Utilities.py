@@ -288,6 +288,7 @@ def GAUGE_WATERSHED(
         New_Gage_watershed_Name):
     commands = []
     commands.append(os.path.join(MPH_dir, "mpiexec"))
+    commands.append("--allow-run-as-root")
     commands.append("-np")
     commands.append(str(np))
     commands.append(os.path.join(TauDEM_dir, "gagewatershed"))
@@ -314,6 +315,7 @@ def MOVEOUTLETTOSTREAMS(
         Distance_thresh):
     commands = []
     commands.append(os.path.join(MPH_dir, "mpiexec"))
+    commands.append("--allow-run-as-root")
     commands.append("-np")
     commands.append(str(np))
     commands.append(os.path.join(TauDEM_dir, "moveoutletstostrm"))

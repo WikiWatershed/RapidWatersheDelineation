@@ -62,7 +62,7 @@ def run_rwd(lat, lon):
             'Delaware_Missing_Coast_Watershed',
             num_processors,
             '/opt/taudem',
-            '/usr/bin/',
+            '/usr/local/bin/',
             output_path,
         )
 
