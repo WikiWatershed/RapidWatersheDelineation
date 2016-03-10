@@ -525,7 +525,11 @@ def Get_Watershed_Attributes(
     Relief_Ratio=Basin_Relief/Basin_length
     Avg_slope=Ad8_weighted/Ad8
     Drainage_Density=Total_stream_length/(Area*1000)
-    Length_Overland_flow=1/(2*Drainage_Density)
+    if(Drainage_Density>0.0):
+       Length_Overland_flow=1/(2*Drainage_Density)
+    else:
+       Length_Overland_flow=0.0
+
     source = ogr.Open(Point_Watershed+".shp", 1)
     layer = source.GetLayer()
     layer_defn = layer.GetLayerDefn()

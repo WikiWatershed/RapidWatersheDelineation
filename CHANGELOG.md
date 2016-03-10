@@ -1,3 +1,7 @@
+## 1.0.1
+
+- Merge upstream changes to fix invalid watershed GeoJSON
+
 ## 1.0.0
 
 - Merge upstream changes to speed up RWD functions
