@@ -8,8 +8,10 @@ import fiona
 import shapefile
 import subprocess
 import glob
-def PreProcess_TauDEM_for_On_Fly_WatershedDelineation_NHD(input_dir_name,watershed_file,watershed_id_file,p_file,src_file,
-                                                      dist_file,ad8_file,plen_file,tlen_file,gord_file):
+
+
+def main(input_dir_name, watershed_file, watershed_id_file, p_file, src_file, dist_file, ad8_file, plen_file,
+         tlen_file, gord_file):
     input_dir1=input_dir_name+"\\Main_Watershed"
     infile = input_dir1+"\\"+watershed_file
     complimentary_subwatershed_file=input_dir_name+"\\Subwatershed\\Full_watershed"
@@ -138,7 +140,7 @@ def PreProcess_TauDEM_for_On_Fly_WatershedDelineation_NHD(input_dir_name,watersh
             complimentary_subwatershed_file='Full_watershed'+str(int(f['properties']['GRIDCODE']))+'.shp'
             outputBufferfn ='subwatershed_buffer'+str(int(f['properties']['GRIDCODE']))+'.shp'      ##input file buffer shapefile name
             bufferDist = Buffer_distance                                     ##buffer distance
-            createBuffer(inputfn, outputBufferfn, bufferDist)       ## creating buffer shape file
+            create_buffer(inputfn, outputBufferfn, bufferDist)       ## creating buffer shape file
 
             main_dir=input_dir1; flow_file=p_file;stream_file=src_file;D8distance_file=dist_file
             flowdir=os.path.join(main_dir,flow_file);flow_out_file=os.path.join(dir,'subwatershed_'+str(int(f['properties']['GRIDCODE']))+"p.tif")
@@ -202,7 +204,7 @@ def PreProcess_TauDEM_for_On_Fly_WatershedDelineation_NHD(input_dir_name,watersh
 
 if __name__ == '__main__':
     # Map command line arguments to function arguments.
-    PreProcess_TauDEM_for_On_Fly_WatershedDelineation_NHD(*sys.argv[1:])
+    main(*sys.argv[1:])
 
 
 

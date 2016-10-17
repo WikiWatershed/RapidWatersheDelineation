@@ -7,7 +7,8 @@ import gdal
 import fiona
 
 from NHD_RWSDelin_Utilities import generate_moveoutletstostream_command, create_shape_from_point, \
-    extract_value_from_raster_point, extract_value_from_raster, get_gauge_watershed_command, get_watershed_attributes
+    extract_value_from_raster_point, extract_value_from_raster, get_gauge_watershed_command, get_watershed_attributes, \
+    purge
 
 
 def main(longitude, latitude, snapping, maximum_snap_distance, pre_process_dir, gage_watershed_raster,
@@ -68,23 +69,10 @@ def main(longitude, latitude, snapping, maximum_snap_distance, pre_process_dir, 
     if snaptostream == "1":
         if ID > 0 and (distance_stream < distance_thresh):
             pass
-            # os.chdir(output_dir)
-            # subprocess.call(generate_moveoutletstostream_command(np, grid_dir, grid_name, output_dir, outlet_point,
-            #                                                      distance_thresh))
-            # os.chdir(output_dir)
-            # outlet_moved_file = os.path.join(output_dir, "New_Outlet.shp")
         else:
             distance_thresh = 0
-            # os.chdir(output_dir)
-            # subprocess.call(generate_moveoutletstostream_command(np, grid_dir, grid_name, output_dir, outlet_point, 0))   # not move
-            # outlet_moved_file = os.path.join(output_dir, "New_Outlet.shp")
-
     else:
         distance_thresh = 0
-        # os.chdir(output_dir)
-        # subprocess.call(generate_moveoutletstostream_command(np, grid_dir, grid_name, output_dir,
-        #                                     outlet_point, 0))   # not move
-        # outlet_moved_file = os.path.join(output_dir, "New_Outlet.shp")
 
     os.chdir(output_dir)
     subprocess.call(generate_moveoutletstostream_command(np, grid_dir, grid_name, output_dir, outlet_point,
@@ -174,32 +162,16 @@ def main(longitude, latitude, snapping, maximum_snap_distance, pre_process_dir, 
     get_watershed_attributes('New_Outlet.shp', 'New_Point_Watershed.shp', ad8_file, plen_file, tlen_file, gord_file,
                              subwatershed_dir, output_dir)
 
-    # print("watershed attributes time %s seconds ---" % (time.time() - start_time))
-    # pattern = "^mypoint"
-    # path=output_dir
-    # remove_file_directory(path,pattern)
-    # pattern = "^Outlets"
-    # path=0utput_dir
-    # purge(path,pattern)
-    # pattern = "^local"
-    # path=output_dir
-    # purge(path,pattern)
-    # # remove_file('mypoint.shp')
-    # # remove_file('Outlets.shp')
-    # # remove_file('Outlets_moved.shp')
-    # # remove_file('local_subwatershed.shp')
-    # # remove_file('local_subwatershed_dissolve.shp')
-    # # remove_file('point_watershed.shp')
-    # # os.remove('upwacoor.txt')
-    # pattern = "^point_watershed"
-    # path=output_dir
-    # purge(path,pattern)
-    # filelist = glob.glob("temp_*")
-    # for f in filelist:
-    #  os.remove(f)
+    print("watershed attributes time %s seconds ---" % (time.time() - start_time))
+
+    # cleanup the output directory
+    pattern = "^local"
+    path = output_dir
+    purge(path, pattern)
+    os.remove('upwacoor.txt')
+
 
 if __name__ == '__main__':
-    # Map command line arguments to function arguments.
     main(*sys.argv[1:])
 
 
