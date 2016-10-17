@@ -1,34 +1,40 @@
-__author__ = 'shams'
-
 import shutil
 import os
 import sys
-from NHD_RWSDelin_Utilities import *
-import fiona
-import shapefile
 import subprocess
 import glob
 
+import fiona
+from fiona import collection
+import shapefile
+from shapely.ops import cascaded_union
+from shapely.geometry import shape, mapping
+import gdal
+import numpy as np
 
+from NHD_RWD_Utilities import complementary_gagewatershed, create_buffer
+
+
+# TODO (Pabitra): This needs quite a bit of cleanup
 def main(input_dir_name, watershed_file, watershed_id_file, p_file, src_file, dist_file, ad8_file, plen_file,
          tlen_file, gord_file):
-    input_dir1=input_dir_name+"\\Main_Watershed"
-    infile = input_dir1+"\\"+watershed_file
-    complimentary_subwatershed_file=input_dir_name+"\\Subwatershed\\Full_watershed"
-    output_dir1=input_dir_name+"\\Subwatershed"
+    input_dir1 = os.path.join(input_dir_name, "Main_Watershed")
+    infile = os.path.join(input_dir1, "watershed_file")
+    complimentary_subwatershed_file = os.path.join(input_dir_name, "Subwatershed", "Full_watershed")
+    output_dir1 = os.path.join(input_dir_name, "Subwatershed")
     if not os.path.exists(input_dir1):
-       os.makedirs(input_dir1)
+        os.makedirs(input_dir1)
     if not os.path.exists(output_dir1):
-       os.makedirs(output_dir1)
-    output_dir2=input_dir_name+"\\Subwatershed_ALL"
+        os.makedirs(output_dir1)
+    output_dir2 = os.path.join(input_dir_name, "Subwatershed_ALL")
     if not os.path.exists(output_dir2):
-       os.makedirs(output_dir2)
+        os.makedirs(output_dir2)
     os.chdir(input_dir1)
-    dataset=gdal.Open(p_file)
-    geotransform=dataset.GetGeoTransform()
-    pixel_depth=geotransform[1]
-    Buffer_distance=900 ## used 30 cells 30*30 for NHD data
-    watershed_id_file_dir=os.path.join(input_dir1,watershed_id_file)
+    dataset = gdal.Open(p_file)
+    geotransform = dataset.GetGeoTransform()
+    pixel_depth = geotransform[1]
+    Buffer_distance = 900   # used 30 cells 30*30 for NHD data
+    watershed_id_file_dir = os.path.join(input_dir1, watershed_id_file)
     shutil.copy2(watershed_id_file_dir,output_dir1)
     with fiona.open(infile) as source:
         meta = source.meta
@@ -38,80 +44,72 @@ def main(input_dir_name, watershed_file, watershed_id_file, p_file, src_file, di
             with fiona.open(outfile, 'w', **meta) as sink:
                 sink.write(f)
 
-
-#
-# create complimentary watershed ( if exists)  for each subwatershed
+    # create complimentary watershed ( if exists)  for each subwatershed
     with fiona.open(infile) as source:
-      infile_crs = source.crs
-      for f in source:
-
-        ID_complimentary=np.asarray( complementary_gagewatershed(watershed_id_file,int(f['properties']['GRIDCODE'])))
-        Real_Index_Complimentary=ID_complimentary>0
-        Real_ID_Complimentary=ID_complimentary[Real_Index_Complimentary]
-        print(Real_ID_Complimentary)
-        Number_contribute_subwatershed=len(Real_ID_Complimentary)
-        files=[]
-        if(Number_contribute_subwatershed==0):
-            source_dir=output_dir1
-            os.chdir(source_dir)
-            inputfile=os.path.join(source_dir,"subwatershed_"+str(int(f['properties']['GRIDCODE']))+".shp")
-            outputfile='Full_watershed'+str(int(f['properties']['GRIDCODE']))+'.shp'
-            with collection(inputfile, "r") as input:
-                schema = input.schema.copy()
-                with collection(
-                        outputfile, "w", "ESRI Shapefile",schema, infile_crs) as output:
-                    shapes = []
-                    for f in input:
-                        shapes.append( shape(f['geometry']).buffer(1))
-                    merged = cascaded_union(shapes)
-                    output.write({
-                        'properties': {
-                            'GRIDCODE': '1'
-                        },
-                        'geometry': mapping(merged)
-                    })
-
-
-            print "No Complimentary watershed Exists"
-
-        else :
-            for i in range(0,Number_contribute_subwatershed):
-                source_dir=output_dir1 ### copying complimetary shapefile to new folder """
+        infile_crs = source.crs
+        for f in source:
+            ID_complimentary=np.asarray(complementary_gagewatershed(watershed_id_file,int(f['properties']['GRIDCODE'])))
+            Real_Index_Complimentary=ID_complimentary>0
+            Real_ID_Complimentary=ID_complimentary[Real_Index_Complimentary]
+            print(Real_ID_Complimentary)
+            Number_contribute_subwatershed=len(Real_ID_Complimentary)
+            files=[]
+            if Number_contribute_subwatershed == 0:
+                source_dir = output_dir1
                 os.chdir(source_dir)
-                file = os.path.join(source_dir,"subwatershed_"+str(int(Real_ID_Complimentary[i]))+".shp")
-                files.append(file)
-            outputfile_WD=complimentary_subwatershed_file+str(int(f['properties']['GRIDCODE']))+'WD'
-            sub_water_file= os.path.join(source_dir,"subwatershed_"+str(int(f['properties']['GRIDCODE']))+".shp")
-            files.append(sub_water_file)
-            w = shapefile.Writer()
-            for ff in files:
-                r = shapefile.Reader(ff)
-                w._shapes.extend(r.shapes())
-                w.records.extend(r.records()) ## make DSI as integer value other wise it will not work
-            w.fields = list(r.fields)
-            w.save(outputfile_WD)
-            inputfile='Full_watershed'+str(int(f['properties']['GRIDCODE']))+'WD'+'.shp'
-            outputfile='Full_watershed'+str(int(f['properties']['GRIDCODE']))+'.shp'
-            with collection(inputfile, "r") as input:
-                schema = input.schema.copy()
-                with collection(
-                        outputfile, "w", "ESRI Shapefile",schema, infile_crs) as output:
-                    shapes = []
-                    for f in input:
-                        shapes.append( shape(f['geometry']).buffer(1))
-                    merged = cascaded_union(shapes)
-                    output.write({
-                        'properties': {
-                            'GRIDCODE': '1'
-                        },
-                        'geometry': mapping(merged)
-                    })
+                inputfile = os.path.join(source_dir, "subwatershed_" + str(int(f['properties']['GRIDCODE'])) + ".shp")
+                outputfile = 'Full_watershed' + str(int(f['properties']['GRIDCODE'])) + '.shp'
+                with collection(inputfile, "r") as input:
+                    schema = input.schema.copy()
+                    with collection(outputfile, "w", "ESRI Shapefile", schema, infile_crs) as output:
+                        shapes = []
+                        for f in input:
+                            shapes.append( shape(f['geometry']).buffer(1))
+                        merged = cascaded_union(shapes)
+                        output.write({
+                            'properties': {
+                                'GRIDCODE': '1'
+                            },
+                            'geometry': mapping(merged)
+                        })
 
+                print ("No Complimentary watershed Exists")
 
+            else:
+                for i in range(0, Number_contribute_subwatershed):
+                    source_dir = output_dir1    # copying complimetary shapefile to new folder
+                    os.chdir(source_dir)
+                    file = os.path.join(source_dir, "subwatershed_" + str(int(Real_ID_Complimentary[i])) + ".shp")
+                    files.append(file)
+                outputfile_WD = complimentary_subwatershed_file+str(int(f['properties']['GRIDCODE']))+'WD'
+                sub_water_file = os.path.join(source_dir, "subwatershed_" + str(int(f['properties']['GRIDCODE'])) +
+                                              ".shp")
+                files.append(sub_water_file)
+                w = shapefile.Writer()
+                for ff in files:
+                    r = shapefile.Reader(ff)
+                    w._shapes.extend(r.shapes())
+                    w.records.extend(r.records())   # make DSI as integer value otherwise it will not work
+                w.fields = list(r.fields)
+                w.save(outputfile_WD)
+                inputfile = 'Full_watershed' + str(int(f['properties']['GRIDCODE'])) + 'WD' + '.shp'
+                outputfile = 'Full_watershed' + str(int(f['properties']['GRIDCODE'])) + '.shp'
+                with collection(inputfile, "r") as input:
+                    schema = input.schema.copy()
+                    with collection(outputfile, "w", "ESRI Shapefile", schema, infile_crs) as output:
+                        shapes = []
+                        for f in input:
+                            shapes.append( shape(f['geometry']).buffer(1))
+                        merged = cascaded_union(shapes)
+                        output.write({
+                            'properties': {
+                                'GRIDCODE': '1'
+                            },
+                            'geometry': mapping(merged)
+                        })
 
-
-
-# # make directory for each of the subwatershed and then extract and keep subwatershed, complimentary watershed shapefile
+    # make directory for each of the subwatershed and then extract and keep subwatershed, complimentary
+    # watershed shapefile
     with fiona.open(infile) as source:
        source_dir=output_dir1
        os.chdir(source_dir)
@@ -129,7 +127,8 @@ def main(input_dir_name, watershed_file, watershed_id_file, p_file, src_file, di
             if os.path.isfile(file2):
                 shutil.copy2(file2, dest)
 
-# extract streamraster,flow direction, watershed grid for each of the subwateshed and store in the subwatershed directory
+    # extract streamraster,flow direction, watershed grid for each of the subwateshed and store in the
+    # subwatershed directory
     with fiona.open(infile) as source:
        for f in source:
           #if(int(f['properties']['GRIDCODE'])>1):
@@ -181,9 +180,7 @@ def main(input_dir_name, watershed_file, watershed_id_file, p_file, src_file, di
 
             input.close()
 
-
-# #
-# #Remove subwatershed directory which we dont need
+    # Remove subwatershed directory which we dont need
     with fiona.open(infile) as source:
       for f in source:
         dest_dir=output_dir1
@@ -203,7 +200,6 @@ def main(input_dir_name, watershed_file, watershed_id_file, p_file, src_file, di
                 os.remove(file1)
 
 if __name__ == '__main__':
-    # Map command line arguments to function arguments.
     main(*sys.argv[1:])
 
 

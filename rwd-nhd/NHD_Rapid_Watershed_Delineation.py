@@ -6,7 +6,7 @@ import subprocess
 import gdal
 import fiona
 
-from NHD_RWSDelin_Utilities import generate_moveoutletstostream_command, create_shape_from_point, \
+from NHD_RWD_Utilities import generate_moveoutletstostream_command, create_shape_from_point, \
     extract_value_from_raster_point, extract_value_from_raster, get_gauge_watershed_command, get_watershed_attributes, \
     purge
 
