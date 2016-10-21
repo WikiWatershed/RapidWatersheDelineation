@@ -26,7 +26,7 @@ def main(longitude, latitude, snapping, maximum_snap_distance, pre_process_dir, 
         os.makedirs(output_dir)
 
     os.chdir(dir_main)
-    infile_crs=[]
+    infile_crs = []
     with fiona.open(main_watershed + '.shp') as source:
         projection = source.crs
         infile_crs.append(projection)
