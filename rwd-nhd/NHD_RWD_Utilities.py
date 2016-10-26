@@ -116,9 +116,10 @@ def get_gauge_watershed_command(mph_dir, np, taudem_dir, grid_dir, grid_name, ou
                                 new_gage_watershed_name):
     commands = []
     commands.append(os.path.join(mph_dir, "mpiexec"))
-    commands.append("-n")
+    commands.append("--allow-run-as-root")
+    commands.append("-np")
     commands.append(str(np))
-    commands.append(os.path.join(taudem_dir, "GageWatershed"))
+    commands.append(os.path.join(taudem_dir, "gagewatershed"))
     commands.append("-p")
     commands.append(os.path.join(grid_dir, grid_name + "p.tif"))
     commands.append("-o")
@@ -133,12 +134,13 @@ def get_gauge_watershed_command(mph_dir, np, taudem_dir, grid_dir, grid_name, ou
     return fused_command
 
 
-def generate_moveoutletstostream_command(np, Subwatershed_dir, Grid_Name,Output_dir, Outlet_Point, Distance_thresh):
+def generate_moveoutletstostream_command(mph_dir, np, taudem_dir, Subwatershed_dir, Grid_Name,Output_dir, Outlet_Point, Distance_thresh):
     commands = []
-    commands.append("mpiexec")
-    commands.append("-n")
+    commands.append(os.path.join(mph_dir, "mpiexec"))
+    commands.append("--allow-run-as-root")
+    commands.append("-np")
     commands.append(str(np))
-    commands.append("moveoutletstostreams")
+    commands.append(os.path.join(taudem_dir, "moveoutletstostrm"))
     commands.append("-p")
     commands.append(os.path.join(Subwatershed_dir,Grid_Name + "p.tif"))
     commands.append("-src")

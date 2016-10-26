@@ -1,7 +1,6 @@
 import sys
 import os
 import time
-import subprocess
 
 import gdal
 import fiona
@@ -12,7 +11,7 @@ from NHD_RWD_Utilities import generate_moveoutletstostream_command, create_shape
 
 
 def main(longitude, latitude, snapping, maximum_snap_distance, pre_process_dir, gage_watershed_raster,
-         gage_watershed_shapefile, np, taudem_dir, mpi_dir):
+         gage_watershed_shapefile, np, taudem_dir, mpi_dir, output_dir):
 
     start_time = time.time()
 
@@ -21,7 +20,6 @@ def main(longitude, latitude, snapping, maximum_snap_distance, pre_process_dir, 
     dir_main = os.path.join(str(pre_process_dir), 'Main_Watershed')
     main_watershed = gage_watershed_shapefile
 
-    output_dir = os.path.join(str(pre_process_dir), 'Delineated_Watershed')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -75,24 +73,28 @@ def main(longitude, latitude, snapping, maximum_snap_distance, pre_process_dir, 
         distance_thresh = 0
 
     os.chdir(output_dir)
-    subprocess.call(generate_moveoutletstostream_command(np, grid_dir, grid_name, output_dir, outlet_point,
-                                                         distance_thresh))
+    cmd = generate_moveoutletstostream_command(mpi_dir, np, taudem_dir, grid_dir, grid_name, output_dir, outlet_point,
+                                                         distance_thresh)
+    print(cmd)
+    os.system(cmd)
     outlet_moved_file = os.path.join(output_dir, "New_Outlet.shp")
 
-    subprocess.call(get_gauge_watershed_command(mpi_dir, np, taudem_dir, grid_dir, grid_name, output_dir,
-                                                outlet_moved_file, new_gage_watershed_name))
+    cmd = get_gauge_watershed_command(mpi_dir, np, taudem_dir, grid_dir, grid_name, output_dir,
+                                                outlet_moved_file, new_gage_watershed_name)
+    print(cmd)
+    os.system(cmd)
 
     cmd = 'gdal_polygonize.py -8 local_subwatershed.tif -b 1 -f "ESRI Shapefile"  ' \
            'local_subwatershed.shp local_subwatershed GRIDCODE '
-
+    print(cmd)
     os.system(cmd)
 
     cmd = 'ogr2ogr local_subwatershed_dissolve.shp local_subwatershed.shp -dialect sqlite -sql' + " " + \
           ' "SELECT GRIDCODE , ST_Union(geometry) as geometry FROM ' + " " + " 'local_subwatershed' " + " " + \
           ' GROUP BY GRIDCODE" ' + '  -nln results -overwrite'
-
     print(cmd)
-    subprocess.call(cmd)
+    os.system(cmd)
+
     new_gage_watershed_dissolve = new_gage_watershed_name + "_dissolve"
     myid = []
     subid = []
@@ -148,7 +150,8 @@ def main(longitude, latitude, snapping, maximum_snap_distance, pre_process_dir, 
             os.system(cmd)
 
         cmd = 'ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp -dialect sqlite -sql' + " " + \
-              ' "SELECT GRIDCODE , ST_Union(geometry) as geometry FROM ' + " " + " 'local_subwatershed_dissolve' "
+              ' "SELECT GRIDCODE , ST_Union(geometry) as geometry FROM local_subwatershed_dissolve" '
+        print(cmd)
         os.system(cmd)
     else:
         print ("Up stream edge was Not reached")
@@ -157,6 +160,7 @@ def main(longitude, latitude, snapping, maximum_snap_distance, pre_process_dir, 
         cmd = 'ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp -dialect sqlite -sql' + " " + \
               ' "SELECT GRIDCODE , ST_Union(geometry) as geometry FROM ' + " " + \
               " 'local_subwatershed_dissolve' " + " " + ' GROUP BY GRIDCODE" '
+        print(cmd)
         os.system(cmd)
 
     get_watershed_attributes('New_Outlet.shp', 'New_Point_Watershed.shp', ad8_file, plen_file, tlen_file, gord_file,
