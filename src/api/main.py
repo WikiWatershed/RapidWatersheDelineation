@@ -7,6 +7,8 @@ import tempfile
 import uuid
 import traceback
 
+import ogr
+import osr
 from flask import Flask, jsonify, request, render_template
 
 from rwd import Rapid_Watershed_Delineation
@@ -106,13 +108,20 @@ def run_rwd_nhd(lat, lon):
     num_processors = '1'
     data_path = '/opt/rwd-data/nhd'
 
+    albers_lat, albers_lon = reproject_point(
+        (lat, lon),
+        # WGS 84 Latlong
+        from_epsg=4326,
+        # NAD83 / Conus Albers
+        to_epsg=5070)
+
     # Create a temporary directory to hold the output.
     output_path = tempfile.mkdtemp()
 
     try:
         NHD_Rapid_Watershed_Delineation.Point_Watershed_Function(
-            lon,
-            lat,
+            albers_lon,
+            albers_lat,
             snapping,
             maximum_snap_distance,
             data_path,
@@ -162,6 +171,31 @@ def load_json(shp_path, output_path, simplify_tolerance=None):
     except:
         log.exception('Could not get GeoJSON from output.')
         return None
+
+
+def reproject_point(lat_lon, from_epsg, to_epsg):
+    """
+    Source: http://gis.stackexchange.com/a/78850
+    """
+    lat, lon = lat_lon
+
+    lat = float(lat)
+    lon = float(lon)
+
+    point = ogr.Geometry(ogr.wkbPoint)
+    point.AddPoint(lon, lat)
+
+    inSpatialRef = osr.SpatialReference()
+    inSpatialRef.ImportFromEPSG(from_epsg)
+
+    outSpatialRef = osr.SpatialReference()
+    outSpatialRef.ImportFromEPSG(to_epsg)
+
+    coordTransform = osr.CoordinateTransformation(inSpatialRef, outSpatialRef)
+    point.Transform(coordTransform)
+
+    return point.GetY(), point.GetX()
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0")
