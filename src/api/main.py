@@ -12,6 +12,8 @@ from flask import Flask, jsonify, request, render_template
 from rwd.Rapid_Watershed_Delineation import Point_Watershed_Function
 
 
+VERSION = '1.0.1'
+
 app = Flask(__name__)
 
 log = logging.getLogger(__name__)
@@ -29,6 +31,11 @@ def error_response(error_message, stack_trace):
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
+
+
+@app.route('/version.txt', methods=['GET'])
+def version_route():
+    return '{}\n'.format(VERSION)
 
 
 @app.route('/rwd/<lat>/<lon>', methods=['GET'])
