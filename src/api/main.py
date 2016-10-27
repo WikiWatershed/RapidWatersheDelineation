@@ -197,5 +197,5 @@ def reproject_point(lat_lon, from_epsg, to_epsg):
     return point.GetY(), point.GetX()
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', debug=True)
