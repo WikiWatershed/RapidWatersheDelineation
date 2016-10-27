@@ -9,7 +9,8 @@ import traceback
 
 from flask import Flask, jsonify, request, render_template
 
-from rwd.Rapid_Watershed_Delineation import Point_Watershed_Function
+from rwd import Rapid_Watershed_Delineation
+from rwd_nhd import NHD_Rapid_Watershed_Delineation
 
 
 VERSION = '1.0.1'
@@ -52,12 +53,11 @@ def run_rwd(lat, lon):
     num_processors = '1'
     data_path = '/opt/rwd-data'
 
-    # Create a temporary directory to hold the output
-    # of RWD.
+    # Create a temporary directory to hold the output.
     output_path = tempfile.mkdtemp()
 
     try:
-        Point_Watershed_Function(
+        Rapid_Watershed_Delineation.Point_Watershed_Function(
             lon,
             lat,
             snapping,
@@ -67,6 +67,57 @@ def run_rwd(lat, lon):
             'delaware_gw_5000_diss',
             'Delaware_5000_GW_ID.txt',
             'Delaware_Missing_Coast_Watershed',
+            num_processors,
+            '/opt/taudem',
+            '/usr/local/bin/',
+            output_path,
+        )
+
+        # The Watershed and input coordinates (possibly snapped to stream)
+        # are written to disk.  Load them and convert to json
+        wshed_shp_path = os.path.join(output_path, 'New_Point_Watershed.shp')
+        input_shp_path = os.path.join(output_path, 'New_Outlet.shp')
+
+        output = {
+            'watershed': load_json(wshed_shp_path, output_path, simplify),
+            'input_pt': load_json(input_shp_path, output_path)
+        }
+
+        shutil.rmtree(output_path)
+        return jsonify(**output)
+
+    except Exception as exc:
+        log.exception('Error running Point_Watershed_Function')
+        stack_trace = traceback.format_exc()
+        return error_response(exc.message, stack_trace)
+
+
+@app.route('/rwd-nhd/<lat>/<lon>', methods=['GET'])
+def run_rwd_nhd(lat, lon):
+    """
+    Runs RWD NHD for lat/lon and returns the GeoJSON
+    for the computed watershed boundary, outlet point
+    and snapped point.
+    """
+    snapping = request.args.get('snapping', '1')
+    maximum_snap_distance = request.args.get('maximum_snap_distance', '10000')
+    simplify = str(request.args.get('simplify', 0.0001))
+
+    num_processors = '1'
+    data_path = '/opt/rwd-data'
+
+    # Create a temporary directory to hold the output.
+    output_path = tempfile.mkdtemp()
+
+    try:
+        NHD_Rapid_Watershed_Delineation.Point_Watershed_Function(
+            lon,
+            lat,
+            snapping,
+            maximum_snap_distance,
+            data_path,
+            'gw.tif',
+            'gw',
             num_processors,
             '/opt/taudem',
             '/usr/local/bin/',
