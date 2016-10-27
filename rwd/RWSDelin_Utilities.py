@@ -25,17 +25,11 @@ def Raster_to_Polygon(input_file, output_file):
     gdal.UseExceptions()
     src_ds = gdal.Open(input_file)
     if src_ds is None:
-        # print 'Unable to open %s' % src_filename
-        sys.exit(1)
-    try:
-        srcband = src_ds.GetRasterBand(1)
-        srd = srcband.GetMaskBand()
+        raise Exception('Unable to open {}'.format(src_filename))
 
-    except RuntimeError as e:
-     # for example, try GetRasterBand(10)
-     # print 'Band ( %i ) not found' % band_num
-     # print e
-        sys.exit(1)
+    srcband = src_ds.GetRasterBand(1)
+    srd = srcband.GetMaskBand()
+
     dst_layername = output_file
     drv = ogr.GetDriverByName("ESRI Shapefile")
     dst_ds = drv.CreateDataSource(dst_layername + ".shp")
