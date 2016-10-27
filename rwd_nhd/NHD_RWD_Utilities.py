@@ -108,6 +108,11 @@ def extract_value_from_raster_point(rasterfile, x, y):
     px = int((mx - gt[0]) / gt[1])  # x pixel
     py = int((my - gt[3]) / gt[5])  # y pixel
     pixel_data = rb.ReadAsArray(px, py, 1, 1)     # Assumes 16 bit int aka 'short'
+
+    # Point does not exist within raster bounds.
+    if not pixel_data:
+        return -1
+
     pixel_val = pixel_data[0, 0]    # use the 'short' format code (2 bytes) not int (4 bytes)
     return pixel_val    # intval is a tuple, length=1 as we only asked for 1 pixel value
 

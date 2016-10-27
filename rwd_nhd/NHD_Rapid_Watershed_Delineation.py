@@ -46,7 +46,8 @@ def Point_Watershed_Function(
 
     # extract ID from gage watershed raster saves significant amount of time, that is polygon searching takes long
     # amount of time however extract raster value from raster does not takes
-    fg = int(extract_value_from_raster_point(gage_watershed_rasterfile, longitude, latitude))
+    fg = int(extract_value_from_raster_point(
+        gage_watershed_rasterfile, longitude, latitude))
     ID = fg
     print(ID)
     if ID is None or ID < 1:
