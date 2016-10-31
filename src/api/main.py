@@ -139,8 +139,12 @@ def run_rwd_nhd(lat, lon):
         input_shp_path = os.path.join(output_path, 'New_Outlet.shp')
 
         output = {
-            'watershed': load_json(wshed_shp_path, output_path, simplify),
-            'input_pt': load_json(input_shp_path, output_path)
+            'watershed': load_json(wshed_shp_path, output_path, simplify,
+                                   # From NAD83 / Conus Albers to WGS 84 Latlong
+                                   from_epsg=5070, to_epsg=4326),
+            'input_pt': load_json(input_shp_path, output_path,
+                                  # From NAD83 / Conus Albers to WGS 84 Latlong
+                                  from_epsg=5070, to_epsg=4326)
         }
 
         shutil.rmtree(output_path)
@@ -152,7 +156,8 @@ def run_rwd_nhd(lat, lon):
         return error_response(exc.message, stack_trace)
 
 
-def load_json(shp_path, output_path, simplify_tolerance=None):
+def load_json(shp_path, output_path, simplify_tolerance=None,
+              from_epsg=None, to_epsg=None):
     name = '%s.json' % uuid.uuid4().hex
     output_json_path = os.path.join(output_path, name)
     ogr_cmd = ['ogr2ogr', output_json_path, shp_path, '-f', 'GeoJSON']
@@ -161,6 +166,10 @@ def load_json(shp_path, output_path, simplify_tolerance=None):
     # is a tolerance setting
     cmd = ogr_cmd + ['-simplify', simplify_tolerance] if simplify_tolerance \
         else ogr_cmd
+
+    cmd = cmd + ['-t_srs', "EPSG: " + str(from_epsg),
+                 '-a_srs', "EPSG: " + str(to_epsg)] \
+        if from_epsg and to_epsg else cmd
 
     call(cmd)
 
