@@ -53,7 +53,7 @@ def run_rwd(lat, lon):
     simplify = str(request.args.get('simplify', 0.0001))
 
     num_processors = '1'
-    data_path = '/opt/rwd-data'
+    data_path = '/opt/rwd-data/drb'
 
     # Create a temporary directory to hold the output.
     output_path = tempfile.mkdtemp()
