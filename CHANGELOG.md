@@ -1,3 +1,7 @@
+## 1.1.0
+- Add `rwd-nhd` api endpoint to delineate points using NHD data (ie points beyond the Delaware River Basin
+- Update data file paths to `/opt/rwd-data/nhd` and `/opt/rwd-data/drb` for the new NHD data set and the old DRB data set respectively
+
 ## 1.0.1
 
 - Merge upstream changes to fix invalid watershed GeoJSON
