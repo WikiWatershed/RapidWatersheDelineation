@@ -12,6 +12,7 @@ To create a new release, use the following git commands:
 $ git flow release start 0.1.0
 $ vim CHANGELOG.md
 $ vim setup.py
+$ vim src/api/main.py
 $ git commit -m "0.1.0"
 $ git flow release publish 0.1.0
 $ git flow release finish 0.1.0
