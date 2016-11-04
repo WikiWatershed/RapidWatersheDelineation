@@ -11,7 +11,7 @@ import ogr
 import osr
 from flask import Flask, jsonify, request, render_template
 
-from rwd import Rapid_Watershed_Delineation
+from rwd_drb import Rapid_Watershed_Delineation
 from rwd_nhd import NHD_Rapid_Watershed_Delineation
 
 
