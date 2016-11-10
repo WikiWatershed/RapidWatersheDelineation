@@ -8,6 +8,7 @@ import numpy as np
 from shapely.geometry import Point
 from fiona import collection
 from osgeo import gdal, ogr
+import osr
 from shapely.geometry import mapping
 
 
@@ -30,14 +31,40 @@ def create_buffer(inputfn, outputBufferfn, bufferDist):
         bufferlyr.CreateFeature(outFeature)
 
 
-def create_shape_from_point(x, y, file, projection):
+def reproject_point(lat_lon, from_epsg, to_epsg):
+    """
+    Source: http://gis.stackexchange.com/a/78850
+    """
+    lat, lon = lat_lon
+
+    lat = float(lat)
+    lon = float(lon)
+
+    point = ogr.Geometry(ogr.wkbPoint)
+    point.AddPoint(lon, lat)
+
+    inSpatialRef = osr.SpatialReference()
+    inSpatialRef.ImportFromEPSG(from_epsg)
+
+    outSpatialRef = osr.SpatialReference()
+    outSpatialRef.ImportFromEPSG(to_epsg)
+
+    coordTransform = osr.CoordinateTransformation(inSpatialRef, outSpatialRef)
+    point.Transform(coordTransform)
+
+    return float(point.GetY()), float(point.GetX())
+
+
+def create_shape_from_point(lat_long_orig, lat_long_proj, file, projection):
+    y, x = lat_long_proj
     point = Point(x,y)
+    lat, lon = lat_long_orig
     schema = {'geometry': 'Point', 'properties': {'Lat': 'float', 'Lon': 'float', 'ID': 'int'}}
     with collection(file + ".shp", "w", "ESRI Shapefile", schema, projection) as output:
         output.write({
                 'properties': {
-                    'Lat': y,
-                    'Lon': x,
+                    'Lat': lat,
+                    'Lon': lon,
                     'ID': 1,
                 },
                 'geometry': mapping(point)
