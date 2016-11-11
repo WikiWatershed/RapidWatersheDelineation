@@ -7,7 +7,7 @@ import fiona
 
 from NHD_RWD_Utilities import generate_moveoutletstostream_command, create_shape_from_point, \
     extract_value_from_raster_point, extract_value_from_raster, get_gauge_watershed_command, get_watershed_attributes, \
-    purge
+    purge, reproject_point
 
 
 def Point_Watershed_Function(
@@ -25,8 +25,6 @@ def Point_Watershed_Function(
 
     start_time = time.time()
 
-    x = float(longitude)
-    y = float(latitude)
     dir_main = os.path.join(str(pre_process_dir), 'Main_Watershed')
     main_watershed = gage_watershed_shapefile
 
@@ -40,14 +38,21 @@ def Point_Watershed_Function(
         infile_crs.append(projection)
     os.chdir(output_dir)
 
-    create_shape_from_point(x, y, "mypoint", infile_crs[0])
+    albers_lat, albers_lon = reproject_point(
+        (latitude, longitude),
+        # WGS 84 Latlong
+        from_epsg=4326,
+        # NAD83 / Conus Albers
+        to_epsg=5070)
+
+    create_shape_from_point((latitude, longitude), (albers_lat, albers_lon), "mypoint", infile_crs[0])
 
     gage_watershed_rasterfile = os.path.join(dir_main, gage_watershed_raster)
 
     # extract ID from gage watershed raster saves significant amount of time, that is polygon searching takes long
     # amount of time however extract raster value from raster does not takes
     fg = int(extract_value_from_raster_point(
-        gage_watershed_rasterfile, longitude, latitude))
+        gage_watershed_rasterfile, albers_lon, albers_lat))
     ID = fg
     print(ID)
     if ID is None or ID < 1:
