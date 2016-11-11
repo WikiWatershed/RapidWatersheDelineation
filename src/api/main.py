@@ -103,8 +103,6 @@ def run_rwd_nhd(lat, lon):
     """
     snapping = request.args.get('snapping', '1')
     maximum_snap_distance = request.args.get('maximum_snap_distance', '10000')
-    simplify = str(request.args.get('simplify', 0.0001))
-
     num_processors = '1'
     data_path = '/opt/rwd-data/nhd'
 
@@ -137,6 +135,10 @@ def run_rwd_nhd(lat, lon):
         # are written to disk.  Load them and convert to json
         wshed_shp_path = os.path.join(output_path, 'New_Point_Watershed.shp')
         input_shp_path = os.path.join(output_path, 'New_Outlet.shp')
+
+        simplify = str(request.args.get(
+            'simplify',
+            create_simplify_tolerance_by_area(wshed_shp_path)))
 
         output = {
             'watershed': load_json(wshed_shp_path, output_path, simplify,
@@ -204,6 +206,22 @@ def reproject_point(lat_lon, from_epsg, to_epsg):
     point.Transform(coordTransform)
 
     return point.GetY(), point.GetX()
+
+def get_shp_area(shp_file_path):
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+    dataSource = driver.Open(shp_file_path, 1)
+    layer = dataSource.GetLayer()
+    return layer[0].GetField("Area")
+
+
+def create_simplify_tolerance_by_area(shp_file_path):
+    area = get_shp_area(shp_file_path)
+    if area <= 10000:
+        return 50
+    elif area <= 20000:
+        return 100
+    else:
+        return 1000
 
 
 if __name__ == "__main__":
