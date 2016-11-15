@@ -8,14 +8,13 @@ import uuid
 import traceback
 
 import ogr
-import osr
 from flask import Flask, jsonify, request, render_template
 
 from rwd_drb import Rapid_Watershed_Delineation
 from rwd_nhd import NHD_Rapid_Watershed_Delineation
 
 
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 
 app = Flask(__name__)
 
@@ -103,25 +102,16 @@ def run_rwd_nhd(lat, lon):
     """
     snapping = request.args.get('snapping', '1')
     maximum_snap_distance = request.args.get('maximum_snap_distance', '10000')
-    simplify = str(request.args.get('simplify', 0.0001))
-
     num_processors = '1'
     data_path = '/opt/rwd-data/nhd'
-
-    albers_lat, albers_lon = reproject_point(
-        (lat, lon),
-        # WGS 84 Latlong
-        from_epsg=4326,
-        # NAD83 / Conus Albers
-        to_epsg=5070)
 
     # Create a temporary directory to hold the output.
     output_path = tempfile.mkdtemp()
 
     try:
         NHD_Rapid_Watershed_Delineation.Point_Watershed_Function(
-            albers_lon,
-            albers_lat,
+            float(lon),
+            float(lat),
             snapping,
             maximum_snap_distance,
             data_path,
@@ -137,6 +127,10 @@ def run_rwd_nhd(lat, lon):
         # are written to disk.  Load them and convert to json
         wshed_shp_path = os.path.join(output_path, 'New_Point_Watershed.shp')
         input_shp_path = os.path.join(output_path, 'New_Outlet.shp')
+
+        simplify = str(request.args.get(
+            'simplify',
+            create_simplify_tolerance_by_area(wshed_shp_path)))
 
         output = {
             'watershed': load_json(wshed_shp_path, output_path, simplify,
@@ -181,29 +175,21 @@ def load_json(shp_path, output_path, simplify_tolerance=None,
         log.exception('Could not get GeoJSON from output.')
         return None
 
+def get_shp_area(shp_file_path):
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+    dataSource = driver.Open(shp_file_path, 1)
+    layer = dataSource.GetLayer()
+    return layer[0].GetField("Area")
 
-def reproject_point(lat_lon, from_epsg, to_epsg):
-    """
-    Source: http://gis.stackexchange.com/a/78850
-    """
-    lat, lon = lat_lon
 
-    lat = float(lat)
-    lon = float(lon)
-
-    point = ogr.Geometry(ogr.wkbPoint)
-    point.AddPoint(lon, lat)
-
-    inSpatialRef = osr.SpatialReference()
-    inSpatialRef.ImportFromEPSG(from_epsg)
-
-    outSpatialRef = osr.SpatialReference()
-    outSpatialRef.ImportFromEPSG(to_epsg)
-
-    coordTransform = osr.CoordinateTransformation(inSpatialRef, outSpatialRef)
-    point.Transform(coordTransform)
-
-    return point.GetY(), point.GetX()
+def create_simplify_tolerance_by_area(shp_file_path):
+    area = get_shp_area(shp_file_path)
+    if area <= 10000:
+        return 50
+    elif area <= 20000:
+        return 100
+    else:
+        return 1000
 
 
 if __name__ == "__main__":
