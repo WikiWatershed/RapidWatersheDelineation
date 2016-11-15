@@ -14,7 +14,7 @@ from rwd_drb import Rapid_Watershed_Delineation
 from rwd_nhd import NHD_Rapid_Watershed_Delineation
 
 
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 
 app = Flask(__name__)
 
