@@ -1,3 +1,7 @@
+## 1.1.1
+- Store input point properties "Lat" and "Lon" in their original LatLng projection
+- Simplify output NHD shapes in proportion to their area
+
 ## 1.1.0
 - Add `rwd-nhd` api endpoint to delineate points using NHD data (ie points beyond the Delaware River Basin
 - Update data file paths to `/opt/rwd-data/nhd` and `/opt/rwd-data/drb` for the new NHD data set and the old DRB data set respectively
