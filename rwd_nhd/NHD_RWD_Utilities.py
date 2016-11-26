@@ -55,17 +55,19 @@ def reproject_point(lat_lon, from_epsg, to_epsg):
     return float(point.GetY()), float(point.GetX())
 
 
-def create_shape_from_point(lat_long_orig, lat_long_proj, file, projection):
+def create_shape_from_point(lat_long_orig, lat_long_proj, file, projection, distance_stream):
     y, x = lat_long_proj
     point = Point(x,y)
     lat, lon = lat_long_orig
-    schema = {'geometry': 'Point', 'properties': {'Lat': 'float', 'Lon': 'float', 'ID': 'int'}}
+    # Per http://toblerity.org/fiona/manual.html#writing-new-files the property items are given as a list to retain the order
+    schema = {'geometry': 'Point', 'properties': [('ID', 'int'), ('Lat', 'float'), ('Lon', 'float'), ('DistStr_m', 'float')]}
     with collection(file + ".shp", "w", "ESRI Shapefile", schema, projection) as output:
         output.write({
                 'properties': {
+                    'ID': 1,
                     'Lat': lat,
                     'Lon': lon,
-                    'ID': 1,
+                    'DistStr_m': float(distance_stream)
                 },
                 'geometry': mapping(point)
             })
@@ -124,8 +126,7 @@ def extract_value_from_raster(rasterfile, pointshapefile):
 
 
 def extract_value_from_raster_point(rasterfile, x, y):
-    src_filename = rasterfile
-    src_ds = gdal.Open(src_filename)
+    src_ds = gdal.Open(rasterfile)
     gt = src_ds.GetGeoTransform()
     rb = src_ds.GetRasterBand(1)
 
@@ -134,14 +135,15 @@ def extract_value_from_raster_point(rasterfile, x, y):
 
     px = int((mx - gt[0]) / gt[1])  # x pixel
     py = int((my - gt[3]) / gt[5])  # y pixel
-    pixel_data = rb.ReadAsArray(px, py, 1, 1)     # Assumes 16 bit int aka 'short'
+    pixel_data = rb.ReadAsArray(px, py, 1, 1)
 
     # Point does not exist within raster bounds.
-    if not pixel_data:
+    if pixel_data is None :
         return -1
 
-    pixel_val = pixel_data[0, 0]    # use the 'short' format code (2 bytes) not int (4 bytes)
-    return pixel_val    # intval is a tuple, length=1 as we only asked for 1 pixel value
+    pixel_val = pixel_data[0, 0]
+    src_ds = None # Close the dataset
+    return pixel_val
 
 
 def get_gauge_watershed_command(mph_dir, np, taudem_dir, grid_dir, grid_name, output_dir, outlet_point,
@@ -236,23 +238,29 @@ def get_watershed_attributes(outlet_point, point_watershed,
         area = ad8*30*30/(1000*1000)  # square km
         basin_length = extract_value_from_raster(plen_file_with_path, outlet_point)/1000.00  # Convert to km
         stream_order = extract_value_from_raster(ord_file_with_path, outlet_point)
-        total_stream_length = extract_value_from_raster(tlen_file_with_path, outlet_point)/1000.0  # convert to km
-        drainage_density = total_stream_length / area   # km^-1
-        length_overland_flow = 1 / (2 * drainage_density)
+        if(stream_order < 0):  # This occurs when the point is not on a stream due to either not snapping to stream or being in an internally draining region where there is not a stream downslope to snap to
+            stream_order=0   # Note that here stream order and stream length receive 0 values that differ from the above no data (-999) initializations that persist when ad8 is unknown due to not computing across region boundaries
+            total_stream_length=0
+            drainage_density = -999.0  # Drainage density and overland flow length are still reported as no data as they can not be evaluated without a stream
+            length_overland_flow = -999.0
+        else:
+            total_stream_length = extract_value_from_raster(tlen_file_with_path, outlet_point)/1000.0  # convert to km
+            drainage_density = total_stream_length / area   # km^-1
+            length_overland_flow = 1 / (2 * drainage_density)
 
     source = ogr.Open(point_watershed, 1)
     layer = source.GetLayer()
-    new_field = ogr.FieldDefn('Area', ogr.OFTReal)
+    new_field = ogr.FieldDefn('Area_km2', ogr.OFTReal)  # Changed field names to indicate units
     layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('BasinLen', ogr.OFTReal)
+    new_field = ogr.FieldDefn('BasinL_km', ogr.OFTReal)
     layer.CreateField(new_field)
     new_field = ogr.FieldDefn('Strord', ogr.OFTReal)
     layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('StrLen', ogr.OFTReal)
+    new_field = ogr.FieldDefn('StrLen_km', ogr.OFTReal)
     layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('DrnDen', ogr.OFTReal)
+    new_field = ogr.FieldDefn('DrnDen_kmi', ogr.OFTReal)  # kmi is the best I could do for inverse km given only 10 char.
     layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('AvgOLF', ogr.OFTReal)
+    new_field = ogr.FieldDefn('AvgOLF_km', ogr.OFTReal)
     layer.CreateField(new_field)
     feature = layer.GetFeature(0)
     start_time = time.time()

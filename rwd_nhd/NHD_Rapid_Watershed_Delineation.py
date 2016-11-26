@@ -48,7 +48,8 @@ def Point_Watershed_Function(
         # NAD83 / Conus Albers
         to_epsg=5070)
 
-    create_shape_from_point((latitude, longitude), (albers_y, albers_x), "mypoint", infile_crs[0])
+    # Create shape later when distance to stream is available
+    # create_shape_from_point((latitude, longitude), (albers_y, albers_x), "mypoint", infile_crs[0])
 
     gage_watershed_rasterfile = os.path.join(dir_main, gage_watershed_raster)
 
@@ -65,27 +66,28 @@ def Point_Watershed_Function(
     sub_file_name = "subwatershed_"
     subwatershed_dir = os.path.join(str(pre_process_dir), 'Subwatershed_ALL', dir_name + str(ID))
     dist_file = sub_file_name + str(ID) + "dist.tif"
-    src_filename = os.path.join(subwatershed_dir, dist_file)
-    shp_filename = os.path.join(output_dir, "mypoint.shp")
-    distance_stream = float(extract_value_from_raster(src_filename, shp_filename))
-    grid_name = sub_file_name + str(ID)
+    dist_filename = os.path.join(subwatershed_dir, dist_file)
+    #shp_filename = os.path.join(output_dir, "mypoint.shp")
 
+    distance_stream = float(extract_value_from_raster_point(dist_filename, albers_x, albers_y))
+    create_shape_from_point((latitude, longitude), (albers_y, albers_x), "mypoint", infile_crs[0], distance_stream )
+
+    grid_name = sub_file_name + str(ID)
     # add file name for attributes
-    ad8_file = sub_file_name + str(ID) + "ad8.tif"
-    ord_file = sub_file_name + str(ID) + "ord.tif"
-    plen_file = sub_file_name + str(ID) + "plen.tif"
-    tlen_file = sub_file_name + str(ID) + "tlen.tif"
+    ad8_file = grid_name + "ad8.tif"
+    ord_file = grid_name + "ord.tif"
+    plen_file = grid_name + "plen.tif"
+    tlen_file = grid_name + "tlen.tif"
 
     grid_dir = subwatershed_dir
     outlet_point = "mypoint"
-    distance_thresh = float(str(maximum_snap_distance))
     new_gage_watershed_name = "local_subwatershed"
     snaptostream = snapping
     print("search %s seconds ---" % (time.time() - start_time))
 
     if snaptostream == "1":
-        if ID > 0 and (distance_stream < distance_thresh):
-            pass
+        if ID > 0 and (distance_stream < float(maximum_snap_distance)):
+            distance_thresh=int(float(maximum_snap_distance)/30+10)  # This is an integer number of grid cells to move and assumes 30 m cells.  dist/30 is max number of cells and +10 adds a buffer to make sure we move to the stream regardless
         else:
             distance_thresh = 0
     else:
