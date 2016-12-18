@@ -186,7 +186,7 @@ def Point_Watershed_Function(
 
         for i in compli_watershed_IDs:
             subwater_dir = os.path.join(str(pre_process_dir), 'Subwatershed_ALL', 'Subwatershed' + str(i))
-            com_watershed = "Full_watershed" + str(i)
+            com_watershed = "Simple_watershed" + str(i)
             com_file=os.path.join(subwater_dir, com_watershed + '.shp')
 
             if os.path.isfile(com_file):
