@@ -1,7 +1,6 @@
 import sys
 import os
 import time
-import subprocess
 
 import gdal
 import fiona
@@ -103,8 +102,7 @@ def Point_Watershed_Function(
         outlet_point,
         distance_thresh)
     print(cmd)
-    #  os.system(cmd)   # This was giving an input line is too long error in PC testing
-    subprocess.check_call(cmd)
+    os.system(cmd)
     os.chdir(output_dir)
     outlet_moved_file = os.path.join(output_dir, "New_Outlet.shp")
 
@@ -118,8 +116,7 @@ def Point_Watershed_Function(
         outlet_moved_file,
         new_gage_watershed_name)
     print(cmd)
-    subprocess.check_call(cmd)
-    #os.system(cmd)
+    os.system(cmd)
 
     cmd = 'gdal_polygonize.py -8 local_subwatershed.tif -b 1' \
           ' -f "ESRI Shapefile"' \
