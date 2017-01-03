@@ -25,7 +25,7 @@ def Point_Watershed_Function(
 
     start_time = time.time()
 
-    dir_main = pre_process_dir
+    dir_main = os.path.join(str(pre_process_dir), 'Main_Watershed')
     main_watershed = gage_watershed_shapefile
 
     output_dir=os.path.join(dir_main,output_dir)
