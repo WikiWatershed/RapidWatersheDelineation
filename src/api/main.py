@@ -175,11 +175,12 @@ def load_json(shp_path, output_path, simplify_tolerance=None,
         log.exception('Could not get GeoJSON from output.')
         return None
 
+
 def get_shp_area(shp_file_path):
-    driver = ogr.GetDriverByName("ESRI Shapefile")
+    driver = ogr.GetDriverByName('ESRI Shapefile')
     dataSource = driver.Open(shp_file_path, 1)
     layer = dataSource.GetLayer()
-    return layer[0].GetField("Area")
+    return layer[0].GetField('Area_km2')
 
 
 def create_simplify_tolerance_by_area(shp_file_path):
