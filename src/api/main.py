@@ -192,5 +192,5 @@ def create_simplify_tolerance_by_area(shp_file_path):
         return 1000
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', debug=True)
