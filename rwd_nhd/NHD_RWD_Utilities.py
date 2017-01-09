@@ -55,17 +55,19 @@ def reproject_point(lat_lon, from_epsg, to_epsg):
     return float(point.GetY()), float(point.GetX())
 
 
-def create_shape_from_point(lat_long_orig, lat_long_proj, file, projection):
+def create_shape_from_point(lat_long_orig, lat_long_proj, file, projection, distance_stream):
     y, x = lat_long_proj
     point = Point(x,y)
     lat, lon = lat_long_orig
-    schema = {'geometry': 'Point', 'properties': {'Lat': 'float', 'Lon': 'float', 'ID': 'int'}}
+    # Per http://toblerity.org/fiona/manual.html#writing-new-files the property items are given as a list to retain the order
+    schema = {'geometry': 'Point', 'properties': [('ID', 'int'), ('Lat', 'float'), ('Lon', 'float'), ('DistStr_m', 'float')]}
     with collection(file + ".shp", "w", "ESRI Shapefile", schema, projection) as output:
         output.write({
                 'properties': {
+                    'ID': 1,
                     'Lat': lat,
                     'Lon': lon,
-                    'ID': 1,
+                    'DistStr_m': float(distance_stream)
                 },
                 'geometry': mapping(point)
             })
@@ -124,8 +126,7 @@ def extract_value_from_raster(rasterfile, pointshapefile):
 
 
 def extract_value_from_raster_point(rasterfile, x, y):
-    src_filename = rasterfile
-    src_ds = gdal.Open(src_filename)
+    src_ds = gdal.Open(rasterfile)
     gt = src_ds.GetGeoTransform()
     rb = src_ds.GetRasterBand(1)
 
@@ -134,24 +135,27 @@ def extract_value_from_raster_point(rasterfile, x, y):
 
     px = int((mx - gt[0]) / gt[1])  # x pixel
     py = int((my - gt[3]) / gt[5])  # y pixel
-    pixel_data = rb.ReadAsArray(px, py, 1, 1)     # Assumes 16 bit int aka 'short'
+    pixel_data = rb.ReadAsArray(px, py, 1, 1)
 
     # Point does not exist within raster bounds.
-    if not pixel_data:
+    if pixel_data is None :
         return -1
 
-    pixel_val = pixel_data[0, 0]    # use the 'short' format code (2 bytes) not int (4 bytes)
-    return pixel_val    # intval is a tuple, length=1 as we only asked for 1 pixel value
+    pixel_val = pixel_data[0, 0]
+    src_ds = None # Close the dataset
+    return pixel_val
 
 
 def get_gauge_watershed_command(mph_dir, np, taudem_dir, grid_dir, grid_name, output_dir, outlet_point,
                                 new_gage_watershed_name):
     commands = []
-    commands.append(os.path.join(mph_dir, "mpiexec"))
-    commands.append("--allow-run-as-root")
+    #commands.append(os.path.join(mph_dir, "mpiexec"))
+    commands.append("mpiexec")
+    #commands.append("--allow-run-as-root")
     commands.append("-np")
     commands.append(str(np))
-    commands.append(os.path.join(taudem_dir, "gagewatershed"))
+    #commands.append(os.path.join(taudem_dir, "gagewatershed"))
+    commands.append("gagewatershed")
     commands.append("-p")
     commands.append(os.path.join(grid_dir, grid_name + "p.tif"))
     commands.append("-o")
@@ -168,11 +172,13 @@ def get_gauge_watershed_command(mph_dir, np, taudem_dir, grid_dir, grid_name, ou
 
 def generate_moveoutletstostream_command(mph_dir, np, taudem_dir, Subwatershed_dir, Grid_Name,Output_dir, Outlet_Point, Distance_thresh):
     commands = []
-    commands.append(os.path.join(mph_dir, "mpiexec"))
-    commands.append("--allow-run-as-root")
+    #commands.append(os.path.join(mph_dir, "mpiexec"))  # These were needed to get it to work on a PC for testing.  May need to revert for linux
+    commands.append("mpiexec")
+    #commands.append("--allow-run-as-root")
     commands.append("-np")
     commands.append(str(np))
-    commands.append(os.path.join(taudem_dir, "moveoutletstostrm"))
+    commands.append("moveoutletstostreams")
+    #commands.append(os.path.join(taudem_dir, "moveoutletstostrm"))
     commands.append("-p")
     commands.append(os.path.join(Subwatershed_dir,Grid_Name + "p.tif"))
     commands.append("-src")
@@ -211,39 +217,54 @@ def add_polygon(simplePolygon, out_lyr):
     out_lyr.CreateFeature(out_feat)
 
 def get_watershed_attributes(outlet_point, point_watershed,
-                             ad8_file, plen_file, tlen_file, gord_file, dir_subwatershed, out_dir):
+                             ad8_file, plen_file, tlen_file,ord_file, dir_subwatershed, out_dir):
 
     os.chdir(out_dir)
     ad8_file_with_path = os.path.join(dir_subwatershed, ad8_file)
-    gord_file_with_path = os.path.join(dir_subwatershed, gord_file)
+    ord_file_with_path = os.path.join(dir_subwatershed, ord_file)
     plen_file_with_path = os.path.join(dir_subwatershed, plen_file)
     tlen_file_with_path = os.path.join(dir_subwatershed, tlen_file)
 
-    basin_length = extract_value_from_raster(plen_file_with_path, outlet_point)
-    stream_order = extract_value_from_raster(gord_file_with_path, outlet_point)
-    total_stream_length = extract_value_from_raster(tlen_file_with_path, outlet_point)
     ad8 = extract_value_from_raster(ad8_file_with_path, outlet_point)
     # use Spehorid.R function for calculating dxc and dyc . choose median value for dyc and dxc which is approximations
-    area = ad8*30*30/(1000*1000)
-    drainage_density = total_stream_length/(area*1000)
-    length_overland_flow = 1/(2*drainage_density)
+    area = -999.0  # use this to record no data for catchments that cross region boundaries where this data is not computed
+    drainage_density = -999.0
+    length_overland_flow = -999.0
+    basin_length = -999.0
+    stream_order = -999.0
+    total_stream_length = -999.0
+
+    if(ad8 > 0):  # ad8 is no data when there is edge contamination from crossing of region boundaries
+        area = ad8*30*30/(1000*1000)  # square km
+        basin_length = extract_value_from_raster(plen_file_with_path, outlet_point)/1000.00  # Convert to km
+        stream_order = extract_value_from_raster(ord_file_with_path, outlet_point)
+        if(stream_order < 0):  # This occurs when the point is not on a stream due to either not snapping to stream or being in an internally draining region where there is not a stream downslope to snap to
+            stream_order=0   # Note that here stream order and stream length receive 0 values that differ from the above no data (-999) initializations that persist when ad8 is unknown due to not computing across region boundaries
+            total_stream_length=0
+            drainage_density = -999.0  # Drainage density and overland flow length are still reported as no data as they can not be evaluated without a stream
+            length_overland_flow = -999.0
+        else:
+            total_stream_length = extract_value_from_raster(tlen_file_with_path, outlet_point)/1000.0  # convert to km
+            drainage_density = total_stream_length / area   # km^-1
+            length_overland_flow = 1 / (2 * drainage_density)
+
     source = ogr.Open(point_watershed, 1)
     layer = source.GetLayer()
-    new_field = ogr.FieldDefn('Area', ogr.OFTReal)
+    new_field = ogr.FieldDefn('Area_km2', ogr.OFTReal)  # Changed field names to indicate units
     layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('BasinLen', ogr.OFTReal)
+    new_field = ogr.FieldDefn('BasinL_km', ogr.OFTReal)
     layer.CreateField(new_field)
     new_field = ogr.FieldDefn('Strord', ogr.OFTReal)
     layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('StrLen', ogr.OFTReal)
+    new_field = ogr.FieldDefn('StrLen_km', ogr.OFTReal)
     layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('DrnDen', ogr.OFTReal)
+    new_field = ogr.FieldDefn('DrnDen_kmi', ogr.OFTReal)  # kmi is the best I could do for inverse km given only 10 char.
     layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('AvgOLF', ogr.OFTReal)
+    new_field = ogr.FieldDefn('AvgOLF_km', ogr.OFTReal)
     layer.CreateField(new_field)
     feature = layer.GetFeature(0)
     start_time = time.time()
-    my_at_val = [0, area, float(basin_length)/1000.00, stream_order, float(total_stream_length/1000.0),
+    my_at_val = [0, area, float(basin_length), stream_order, float(total_stream_length),
                  float(drainage_density), float(length_overland_flow)]
     for i in range(1, 7):
         feature.SetField(i, float(my_at_val[i]))

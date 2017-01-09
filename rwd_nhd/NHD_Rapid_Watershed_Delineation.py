@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import subprocess
 
 import gdal
 import fiona
@@ -25,8 +26,10 @@ def Point_Watershed_Function(
 
     start_time = time.time()
 
-    dir_main = os.path.join(str(pre_process_dir), 'Main_Watershed')
+    dir_main = pre_process_dir
     main_watershed = gage_watershed_shapefile
+
+    output_dir=os.path.join(dir_main,output_dir)
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -38,21 +41,22 @@ def Point_Watershed_Function(
         infile_crs.append(projection)
     os.chdir(output_dir)
 
-    albers_lat, albers_lon = reproject_point(
+    albers_y, albers_x = reproject_point(
         (latitude, longitude),
         # WGS 84 Latlong
         from_epsg=4326,
         # NAD83 / Conus Albers
         to_epsg=5070)
 
-    create_shape_from_point((latitude, longitude), (albers_lat, albers_lon), "mypoint", infile_crs[0])
+    # Create shape later when distance to stream is available
+    # create_shape_from_point((latitude, longitude), (albers_y, albers_x), "mypoint", infile_crs[0])
 
     gage_watershed_rasterfile = os.path.join(dir_main, gage_watershed_raster)
 
     # extract ID from gage watershed raster saves significant amount of time, that is polygon searching takes long
     # amount of time however extract raster value from raster does not takes
     fg = int(extract_value_from_raster_point(
-        gage_watershed_rasterfile, albers_lon, albers_lat))
+        gage_watershed_rasterfile, albers_x, albers_y))
     ID = fg
     print(ID)
     if ID is None or ID < 1:
@@ -62,27 +66,28 @@ def Point_Watershed_Function(
     sub_file_name = "subwatershed_"
     subwatershed_dir = os.path.join(str(pre_process_dir), 'Subwatershed_ALL', dir_name + str(ID))
     dist_file = sub_file_name + str(ID) + "dist.tif"
-    src_filename = os.path.join(subwatershed_dir, dist_file)
-    shp_filename = os.path.join(output_dir, "mypoint.shp")
-    distance_stream = float(extract_value_from_raster(src_filename, shp_filename))
-    grid_name = sub_file_name + str(ID)
+    dist_filename = os.path.join(subwatershed_dir, dist_file)
+    #shp_filename = os.path.join(output_dir, "mypoint.shp")
 
+    distance_stream = float(extract_value_from_raster_point(dist_filename, albers_x, albers_y))
+    create_shape_from_point((latitude, longitude), (albers_y, albers_x), "mypoint", infile_crs[0], distance_stream )
+
+    grid_name = sub_file_name + str(ID)
     # add file name for attributes
-    ad8_file = sub_file_name + str(ID) + "ad8.tif"
-    gord_file = sub_file_name + str(ID) + "gord.tif"
-    plen_file = sub_file_name + str(ID) + "plen.tif"
-    tlen_file = sub_file_name + str(ID) + "tlen.tif"
+    ad8_file = grid_name + "ad8.tif"
+    ord_file = grid_name + "ord.tif"
+    plen_file = grid_name + "plen.tif"
+    tlen_file = grid_name + "tlen.tif"
 
     grid_dir = subwatershed_dir
     outlet_point = "mypoint"
-    distance_thresh = float(str(maximum_snap_distance))
     new_gage_watershed_name = "local_subwatershed"
     snaptostream = snapping
     print("search %s seconds ---" % (time.time() - start_time))
 
     if snaptostream == "1":
-        if ID > 0 and (distance_stream < distance_thresh):
-            pass
+        if ID > 0 and (distance_stream < float(maximum_snap_distance)):
+            distance_thresh=int(float(maximum_snap_distance)/30+10)  # This is an integer number of grid cells to move and assumes 30 m cells.  dist/30 is max number of cells and +10 adds a buffer to make sure we move to the stream regardless
         else:
             distance_thresh = 0
     else:
@@ -98,7 +103,8 @@ def Point_Watershed_Function(
         outlet_point,
         distance_thresh)
     print(cmd)
-    os.system(cmd)
+    #  os.system(cmd)   # This was giving an input line is too long error in PC testing
+    subprocess.check_call(cmd)
     os.chdir(output_dir)
     outlet_moved_file = os.path.join(output_dir, "New_Outlet.shp")
 
@@ -112,11 +118,16 @@ def Point_Watershed_Function(
         outlet_moved_file,
         new_gage_watershed_name)
     print(cmd)
-    os.system(cmd)
+    subprocess.check_call(cmd)
+    #os.system(cmd)
 
     cmd = 'gdal_polygonize.py -8 local_subwatershed.tif -b 1' \
           ' -f "ESRI Shapefile"' \
           ' local_subwatershed.shp local_subwatershed GRIDCODE'
+    # The lines below are needed for testing on some PC's where paths conflict.
+    # cmd= 'C:\Python27\python "C:\Program Files\GDAL\gdal_polygonize.py" -8 local_subwatershed.tif -b 1' \
+    #       ' -f "ESRI Shapefile"' \
+    #       ' local_subwatershed.shp local_subwatershed GRIDCODE'
     print(cmd)
     os.system(cmd)
 
@@ -155,13 +166,18 @@ def Point_Watershed_Function(
 
         print("Identify upstream watershed %s seconds ---" % (time.time() - start_time))
 
-    compli_watershed_IDs = []
-    if ID > 0 and num_lines > 1:
-        compli_watershed_IDs = [i for i in subid if i > 0]
-        len_comp = len(subid)
-    else:
-        len_comp = -1
-
+    # compli_watershed_IDs = []  # was subid's > 0  DGT 11/13/16 adds requirement that must be in upcatchids.txt
+    # if ID > 0 and num_lines > 1:
+    #     compli_watershed_IDs = [i for i in subid if i > 0]
+    #     len_comp = len(subid)
+    # else:
+    #     len_comp = -1
+    # DGT replaced the above with the below
+    with open(os.path.join(grid_dir, "upcatchids.txt"), 'r') as f:
+        lines = f.read().splitlines()
+    upcatchids = [int(x) for x in lines]
+    compli_watershed_IDs=[val for val in subid if val in upcatchids]
+    len_comp=len(compli_watershed_IDs)
     if len_comp > 0:
         print ("Up stream edge was reached")
         sub_water_file = []
@@ -170,7 +186,7 @@ def Point_Watershed_Function(
 
         for i in compli_watershed_IDs:
             subwater_dir = os.path.join(str(pre_process_dir), 'Subwatershed_ALL', 'Subwatershed' + str(i))
-            com_watershed = "Full_watershed" + str(i)
+            com_watershed = "Simple_watershed" + str(i)
             com_file=os.path.join(subwater_dir, com_watershed + '.shp')
 
             if os.path.isfile(com_file):
@@ -205,7 +221,7 @@ def Point_Watershed_Function(
         ad8_file,
         plen_file,
         tlen_file,
-        gord_file,
+        ord_file,
         subwatershed_dir,
         output_dir)
 
