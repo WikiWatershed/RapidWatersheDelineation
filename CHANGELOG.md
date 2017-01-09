@@ -1,3 +1,6 @@
+## 1.2.0
+- Support aggregation of multiple NHD Regions
+
 ## 1.1.1
 - Store input point properties "Lat" and "Lon" in their original LatLng projection
 - Simplify output NHD shapes in proportion to their area
