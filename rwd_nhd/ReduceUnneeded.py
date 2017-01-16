@@ -1,3 +1,6 @@
+# Run this script in the Folder containing the Subwatershed_All folder to delete files previously used for
+# watershed attributes to reduce storage footprint.
+
 import os
 import glob
 import zipfile
