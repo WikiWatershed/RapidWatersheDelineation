@@ -147,15 +147,21 @@ def extract_value_from_raster_point(rasterfile, x, y):
 
 
 def get_gauge_watershed_command(mph_dir, np, taudem_dir, grid_dir, grid_name, output_dir, outlet_point,
-                                new_gage_watershed_name):
+                                new_gage_watershed_name,internaldrain):
     commands = []
     commands.append(os.path.join(mph_dir, "mpiexec"))
+    #commands.append("mpiexec")  # For PC Testing
     commands.append("--allow-run-as-root")
     commands.append("-np")
     commands.append(str(np))
     commands.append(os.path.join(taudem_dir, "gagewatershed"))
+    #commands.append("gagewatershed")  # For PC testing
     commands.append("-p")
-    commands.append(os.path.join(grid_dir, grid_name + "p.tif"))
+    if(internaldrain):
+	# May need different path setup when not on PC
+        commands.append("localp.tif")  # Use the local fdr file
+    else:
+        commands.append(os.path.join(grid_dir, grid_name + "p.tif"))
     commands.append("-o")
     commands.append(os.path.join(output_dir, outlet_point))
     commands.append("-gw")
@@ -170,10 +176,12 @@ def get_gauge_watershed_command(mph_dir, np, taudem_dir, grid_dir, grid_name, ou
 
 def generate_moveoutletstostream_command(mph_dir, np, taudem_dir, Subwatershed_dir, Grid_Name,Output_dir, Outlet_Point, Distance_thresh):
     commands = []
-    commands.append(os.path.join(mph_dir, "mpiexec"))
+    commands.append(os.path.join(mph_dir, "mpiexec"))  # These were needed to get it to work on a PC for testing.  May need to revert for linux
+    # commands.append("mpiexec")  # For PC Testing
     commands.append("--allow-run-as-root")
     commands.append("-np")
     commands.append(str(np))
+    # commands.append("moveoutletstostreams")  # For PC Testing
     commands.append(os.path.join(taudem_dir, "moveoutletstostrm"))
     commands.append("-p")
     commands.append(os.path.join(Subwatershed_dir,Grid_Name + "p.tif"))
@@ -216,55 +224,60 @@ def get_watershed_attributes(outlet_point, point_watershed,
                              ad8_file, plen_file, tlen_file,ord_file, dir_subwatershed, out_dir):
 
     os.chdir(out_dir)
-    ad8_file_with_path = os.path.join(dir_subwatershed, ad8_file)
-    ord_file_with_path = os.path.join(dir_subwatershed, ord_file)
-    plen_file_with_path = os.path.join(dir_subwatershed, plen_file)
-    tlen_file_with_path = os.path.join(dir_subwatershed, tlen_file)
 
-    ad8 = extract_value_from_raster(ad8_file_with_path, outlet_point)
+    # ad8_file_with_path = os.path.join(dir_subwatershed, ad8_file)
+    # ord_file_with_path = os.path.join(dir_subwatershed, ord_file)
+    # plen_file_with_path = os.path.join(dir_subwatershed, plen_file)
+    # tlen_file_with_path = os.path.join(dir_subwatershed, tlen_file)
+
+    # ad8 = extract_value_from_raster(ad8_file_with_path, outlet_point)
     # use Spehorid.R function for calculating dxc and dyc . choose median value for dyc and dxc which is approximations
-    area = -999.0  # use this to record no data for catchments that cross region boundaries where this data is not computed
-    drainage_density = -999.0
-    length_overland_flow = -999.0
-    basin_length = -999.0
-    stream_order = -999.0
-    total_stream_length = -999.0
+    # area = -999.0  # use this to record no data for catchments that cross region boundaries where this data is not computed
+    # drainage_density = -999.0
+    # length_overland_flow = -999.0
+    # basin_length = -999.0
+    # stream_order = -999.0
+    # total_stream_length = -999.0
 
-    if(ad8 > 0):  # ad8 is no data when there is edge contamination from crossing of region boundaries
-        area = ad8*30*30/(1000*1000)  # square km
-        basin_length = extract_value_from_raster(plen_file_with_path, outlet_point)/1000.00  # Convert to km
-        stream_order = extract_value_from_raster(ord_file_with_path, outlet_point)
-        if(stream_order < 0):  # This occurs when the point is not on a stream due to either not snapping to stream or being in an internally draining region where there is not a stream downslope to snap to
-            stream_order=0   # Note that here stream order and stream length receive 0 values that differ from the above no data (-999) initializations that persist when ad8 is unknown due to not computing across region boundaries
-            total_stream_length=0
-            drainage_density = -999.0  # Drainage density and overland flow length are still reported as no data as they can not be evaluated without a stream
-            length_overland_flow = -999.0
-        else:
-            total_stream_length = extract_value_from_raster(tlen_file_with_path, outlet_point)/1000.0  # convert to km
-            drainage_density = total_stream_length / area   # km^-1
-            length_overland_flow = 1 / (2 * drainage_density)
+   # if(ad8 > 0):  # ad8 is no data when there is edge contamination from crossing of region boundaries
+       # area = ad8*30*30/(1000*1000)  # square km
+        #basin_length = extract_value_from_raster(plen_file_with_path, outlet_point)/1000.00  # Convert to km
+        #stream_order = extract_value_from_raster(ord_file_with_path, outlet_point)
+        #if(stream_order < 0):  # This occurs when the point is not on a stream due to either not snapping to stream or being in an internally draining region where there is not a stream downslope to snap to
+        #     stream_order=0   # Note that here stream order and stream length receive 0 values that differ from the above no data (-999) initializations that persist when ad8 is unknown due to not computing across region boundaries
+        #     total_stream_length=0
+        #     drainage_density = -999.0  # Drainage density and overland flow length are still reported as no data as they can not be evaluated without a stream
+        #     length_overland_flow = -999.0
+        # else:
+        #     total_stream_length = extract_value_from_raster(tlen_file_with_path, outlet_point)/1000.0  # convert to km
+        #     drainage_density = total_stream_length / area   # km^-1
+        #     length_overland_flow = 1 / (2 * drainage_density)
 
     source = ogr.Open(point_watershed, 1)
     layer = source.GetLayer()
     new_field = ogr.FieldDefn('Area_km2', ogr.OFTReal)  # Changed field names to indicate units
     layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('BasinL_km', ogr.OFTReal)
-    layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('Strord', ogr.OFTReal)
-    layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('StrLen_km', ogr.OFTReal)
-    layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('DrnDen_kmi', ogr.OFTReal)  # kmi is the best I could do for inverse km given only 10 char.
-    layer.CreateField(new_field)
-    new_field = ogr.FieldDefn('AvgOLF_km', ogr.OFTReal)
-    layer.CreateField(new_field)
+    #new_field = ogr.FieldDefn('BasinL_km', ogr.OFTReal)
+    #layer.CreateField(new_field)
+    #new_field = ogr.FieldDefn('Strord', ogr.OFTReal)
+    #layer.CreateField(new_field)
+    #new_field = ogr.FieldDefn('StrLen_km', ogr.OFTReal)
+    #layer.CreateField(new_field)
+    #new_field = ogr.FieldDefn('DrnDen_kmi', ogr.OFTReal)  # kmi is the best I could do for inverse km given only 10 char.
+    #layer.CreateField(new_field)
+    #new_field = ogr.FieldDefn('AvgOLF_km', ogr.OFTReal)
+    #layer.CreateField(new_field)
     feature = layer.GetFeature(0)
     start_time = time.time()
-    my_at_val = [0, area, float(basin_length), stream_order, float(total_stream_length),
-                 float(drainage_density), float(length_overland_flow)]
-    for i in range(1, 7):
+    geom = feature.GetGeometryRef()
+    area = geom.GetArea()/1000000  # convert to km2
+    my_at_val = [0, area]
+    # my_at_val = [0, area, float(basin_length), stream_order, float(total_stream_length),
+    #              float(drainage_density), float(length_overland_flow)]
+    for i in range(1, len(my_at_val)):
         feature.SetField(i, float(my_at_val[i]))
 
     layer.SetFeature(feature)
-    print("writing  time %s seconds ---" % (time.time() - start_time))
+    print("Area time %s seconds ---" % (time.time() - start_time))
     source = None
+
