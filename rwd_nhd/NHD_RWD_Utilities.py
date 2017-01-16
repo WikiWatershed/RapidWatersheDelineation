@@ -176,13 +176,13 @@ def get_gauge_watershed_command(mph_dir, np, taudem_dir, grid_dir, grid_name, ou
 
 def generate_moveoutletstostream_command(mph_dir, np, taudem_dir, Subwatershed_dir, Grid_Name,Output_dir, Outlet_Point, Distance_thresh):
     commands = []
-    commands.append(os.path.join(mph_dir, "mpiexec"))  # These were needed to get it to work on a PC for testing.  May need to revert for linux
+    commands.append(os.path.join(mph_dir, "mpiexec"))  # For linux
     # commands.append("mpiexec")  # For PC Testing
     commands.append("--allow-run-as-root")
     commands.append("-np")
     commands.append(str(np))
     # commands.append("moveoutletstostreams")  # For PC Testing
-    commands.append(os.path.join(taudem_dir, "moveoutletstostrm"))
+    commands.append(os.path.join(taudem_dir, "moveoutletstostrm"))  # For linux
     commands.append("-p")
     commands.append(os.path.join(Subwatershed_dir,Grid_Name + "p.tif"))
     commands.append("-src")

@@ -128,8 +128,8 @@ def Point_Watershed_Function(
             outlet_point,
             distance_thresh)
         #print(cmd)
-        #  os.system(cmd)   # This was giving an input line is too long error in PC testing
-        subprocess.check_call(cmd)
+        os.system(cmd)   # This was giving an input line is too long error in PC testing
+        #subprocess.check_call(cmd)
 
     else:
         # just recreate the New_Outlet file at the original location
@@ -146,7 +146,8 @@ def Point_Watershed_Function(
         uly=str(albers_y + 11000.0)
         lry=str(albers_y - 11000.0)
         cmd="gdal_translate -projwin " + ulx + " " +  uly + " " + lrx + " " +  lry + ' "' + infile + '" ' + outfile
-        subprocess.check_call(cmd)
+        # subprocess.check_call(cmd)
+        os.system(cmd)  
 
 
     os.chdir(output_dir)
@@ -163,16 +164,16 @@ def Point_Watershed_Function(
         new_gage_watershed_name,
         internaldrain)
     print(cmd)
-    subprocess.check_call(cmd)
-    #os.system(cmd)
+    #subprocess.check_call(cmd)
+    os.system(cmd)
 
-    #cmd = 'gdal_polygonize.py -8 local_subwatershed.tif -b 1' \
-    #      ' -f "ESRI Shapefile"' \
-    #      ' local_subwatershed.shp local_subwatershed GRIDCODE'
+    cmd = 'gdal_polygonize.py -8 local_subwatershed.tif -b 1' \
+          ' -f "ESRI Shapefile"' \
+          ' local_subwatershed.shp local_subwatershed GRIDCODE'
     # The lines below are needed for testing on some PC's where paths conflict.
-    cmd= 'C:\Python27\python "C:\Program Files\GDAL\gdal_polygonize.py" -8 local_subwatershed.tif -b 1' \
-           ' -f "ESRI Shapefile"' \
-           ' local_subwatershed.shp local_subwatershed GRIDCODE'
+    # cmd= 'C:\Python27\python "C:\Program Files\GDAL\gdal_polygonize.py" -8 local_subwatershed.tif -b 1' \
+    #       ' -f "ESRI Shapefile"' \
+    #       ' local_subwatershed.shp local_subwatershed GRIDCODE'
     #print(cmd)
     os.system(cmd)
 
