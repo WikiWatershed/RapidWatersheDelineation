@@ -9,7 +9,7 @@ A docker image and fork of @nazmussazib's [Rapid Watershed Delineation](https://
 ### Getting started
 * Define environment variables (see below)
 * Run `./scripts/update.sh`
-* Run `./scripts/run.sh`
+* Run `./scripts/server.sh`
 
 #### Linux
 * Run `curl http://localhost:5000/rwd/-75.276639/39.892986`
