@@ -51,8 +51,9 @@ vim deployment/ansible/roles/model-my-watershed.rwd/defaults/main.yml
 vagrant reload worker --provision
 ```
 
-Note that `10.0.2.2` should point to your host machine. Verify this by running
+Note that `10.0.2.2` should point to your host. Verify this by running
 `route -n` inside the worker VM. It should be the default gateway.
+For Mac OS X, this IP should be the result of `docker-machine ip`.
 
 Then in this project, run:
 
