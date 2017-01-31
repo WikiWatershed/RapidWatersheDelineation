@@ -11,4 +11,4 @@ services:
         - ./src/api:/usr/src/api
         - ./rwd_nhd:/usr/src/rwd_nhd
         - ./rwd_drb:/usr/src/rwd_drb
-    entrypoint: /usr/local/bin/gunicorn -w 4 --log-syslog --bind 0.0.0.0:5000 --reload main:app
+    command: --workers 4 --timeout 60 --bind 0.0.0.0:5000 --reload main:app
