@@ -4,7 +4,7 @@ A docker image and fork of @nazmussazib's [Rapid Watershed Delineation](https://
 
 [![Travis CI](https://api.travis-ci.org/WikiWatershed/docker-rwd.svg "Build Status on Travis CI")](https://travis-ci.org/WikiWatershed/docker-rwd/)
 [![Docker Repository on Quay.io](https://quay.io/repository/wikiwatershed/rwd/status "Docker Repository on Quay.io")](https://quay.io/repository/wikiwatershed/rwd)
-[![Apache V2 License](http://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/wikiwatershed/rapid-watershed-delineation/blob/develop/LICENSE)
+[![Apache V2 License](https://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/wikiwatershed/rapid-watershed-delineation/blob/develop/LICENSE)
 
 ### Getting started
 * Define environment variables (see below)
