@@ -1,0 +1,27 @@
+sudo: required
+
+language: bash
+
+services:
+  - docker
+
+install:
+  - docker build -t quay.io/wikiwatershed/rwd:${TRAVIS_COMMIT:0:7} .
+
+script:
+  - docker run -d --name rwd quay.io/wikiwatershed/rwd:${TRAVIS_COMMIT:0:7} /opt/taudem/gagewatershed
+
+before_deploy:
+  - docker login -e . -p "${QUAY_PASSWORD}" -u "${QUAY_USER}" quay.io
+
+deploy:
+  - provider: script
+    script: ".travis/deploy.sh"
+    on:
+      repo: WikiWatershed/rapid-watershed-delineation
+      branch: develop
+  - provider: script
+    script: ".travis/deploy.sh"
+    on:
+      repo: WikiWatershed/rapid-watershed-delineation
+      tags: true

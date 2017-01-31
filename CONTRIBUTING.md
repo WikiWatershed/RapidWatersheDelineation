@@ -3,7 +3,7 @@
 #### Branches
 
 * `develop` - commits made to `develop` will be deployed during the following release.
-* `master` - commits are merged from `develop` when we create a release.  `master` typically reflects the contents of the current release on [PyPi](https://pypi.python.org/pypi/rapid_watershed_delineation)
+* `master` - commits are merged from `develop` when we create a release.  `master` typically reflects the contents of the current release on [quay.io] (https://quay.io/repository/wikiwatershed/rwd) and [PyPi](https://pypi.python.org/pypi/rapid_watershed_delineation)
 * feature branches - new work is branched from an up-to-date `develop` branch
 ```bash
 git pull origin develop
@@ -12,7 +12,7 @@ git checkout -b feature/[my initials]/[short-desc-of-feature]
 
 
 #### Adding commits to `develop`
-All feature branches should be merged into `develop` through a [Pull Request](https://help.github.com/articles/using-pull-requests/) on GitHub.  This ensures that other developers have a chance to review the changes and make comments about the suitability/implications, etc.  Typically when you receive several `+1` comments, it’s ok to merge in via the GitHub web interface.
+All feature branches should be merged into `develop` through a [Pull Request](https://help.github.com/articles/using-pull-requests/) on GitHub.  This ensures that other developers have a chance to review the changes and make comments about the suitability/implications, etc.  Typically when you receive an approved review, it’s ok to merge in via the GitHub web interface.
 
 Typically, one would push their local feature branch containing the new commits to the origin:
 ```bash
@@ -28,4 +28,4 @@ Running `python setup.py test` from the root of the project will run the test su
 
 
 #### Requesting version update in MMW
-The release process, as described in the [README](https://github.com/WikiWatershed/rapid-watershed-delineation/blob/develop/README.md) will result in a new version of this package being released to PyPi.  When that is done, the changes won't automatically appear in new releases of MMW, which are pinned to a specific version.  Discuss with Azavea to arrange an initiation of a release and update to MMW.
+The release process, as described in the [README](https://github.com/WikiWatershed/rapid-watershed-delineation/blob/develop/README.md) will result in a new version of this package being released to quay.io (and PyPi).  When that is done, the changes won't automatically appear in new releases of MMW, which are pinned to a specific version.  Discuss with Azavea to arrange an initiation of a release and update to MMW.
