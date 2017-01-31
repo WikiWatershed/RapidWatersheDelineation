@@ -38,6 +38,28 @@ Folder structure:
     |-- Subwatershed_ALL
 ```
 
+### Running inside Model My Watershed
+
+To run RWD inside the MMW application during development, follow these
+instructions.
+
+In the MMW project:
+
+```
+# Change the rwd_host setting to 10.0.2.2
+vim deployment/ansible/roles/model-my-watershed.rwd/defaults/main.yml
+vagrant reload worker --provision
+```
+
+Note that `10.0.2.2` should point to your host machine. Verify this by running
+`route -n` inside the worker VM. It should be the default gateway.
+
+Then in this project, run:
+
+```
+./scripts/server.sh
+```
+
 ## Deployments
 
 To create a new release, use the following git commands:
