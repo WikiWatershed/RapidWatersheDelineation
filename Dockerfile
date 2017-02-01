@@ -17,4 +17,10 @@ COPY ./src/api /usr/src/api
 
 WORKDIR /usr/src/api
 
-ENTRYPOINT ["gunicorn", "-w", "4", "--log-syslog", "--bind", "0.0.0.0:5000", "main:app"]
+ENTRYPOINT ["/usr/local/bin/gunicorn"]
+
+CMD ["--workers", "4", \
+     "--timeout", "60", \
+     "--log-syslog", \
+     "--bind", "0.0.0.0:5000", \
+     "main:app"]
