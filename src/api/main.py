@@ -1,11 +1,13 @@
 import logging
 import os.path
 import shutil
-from subprocess import call
 import json
 import tempfile
 import uuid
 import traceback
+
+from math import floor
+from subprocess import call
 
 import ogr
 from flask import Flask, jsonify, request, render_template
@@ -14,7 +16,10 @@ from rwd_drb import Rapid_Watershed_Delineation
 from rwd_nhd import NHD_Rapid_Watershed_Delineation
 
 
-VERSION = '1.2.0'
+VERSION = '1.2.1'
+
+# Keep in sync with src/mmw/js/src/draw/utils.js in model-my-watershed.
+MAX_AREA_KM2 = 112700
 
 app = Flask(__name__)
 
@@ -183,14 +188,13 @@ def get_shp_area(shp_file_path):
     return layer[0].GetField('Area_km2')
 
 
+def linear_interpolate(value, lo, hi):
+    return value * (hi - lo) + lo
+
+
 def create_simplify_tolerance_by_area(shp_file_path):
     area = get_shp_area(shp_file_path)
-    if area <= 10000:
-        return 50
-    elif area <= 20000:
-        return 100
-    else:
-        return 1000
+    return floor(linear_interpolate(min(1, area / MAX_AREA_KM2), 1, 2000))
 
 
 if __name__ == '__main__':
