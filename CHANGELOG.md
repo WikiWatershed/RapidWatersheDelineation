@@ -1,3 +1,9 @@
+## 1.2.1
+
+- Fix internally draining gaps
+- Reduce NHD storage footprint
+- Update NHD simplification tolerance
+
 ## 1.2.0
 - Support aggregation of multiple NHD Regions
 

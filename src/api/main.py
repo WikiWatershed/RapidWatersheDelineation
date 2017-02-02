@@ -16,7 +16,7 @@ from rwd_drb import Rapid_Watershed_Delineation
 from rwd_nhd import NHD_Rapid_Watershed_Delineation
 
 
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 
 # Keep in sync with src/mmw/js/src/draw/utils.js in model-my-watershed.
 MAX_AREA_KM2 = 112700
