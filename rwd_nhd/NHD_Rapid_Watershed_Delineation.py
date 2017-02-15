@@ -59,7 +59,7 @@ def Point_Watershed_Function(
     # extract ID from gage watershed raster saves significant amount of time, that is polygon searching takes long
     # amount of time however extract raster value from raster does not takes
     fg = int(extract_value_from_raster_point(
-        gage_watershed_rasterfile, albers_x, albers_y))
+        gage_watershed_rasterfile, albers_x, albers_y, log))
     ID = fg
     print(ID)
     internaldrain=False
@@ -71,7 +71,7 @@ def Point_Watershed_Function(
         #  There is no joining of upstream watersheds as this is applied only for points not handled by the preprocessed gage watersheds and these points do not have upstream watersheds
         regionsfile = os.path.join(dir_main, "regions.tif")
         ID = int(extract_value_from_raster_point(
-            regionsfile, albers_x, albers_y))
+            regionsfile, albers_x, albers_y, log))
         if ID is None or ID < 1:
             raise Exception('Point located outside the watershed.')
         internaldrain=True
@@ -89,7 +89,7 @@ def Point_Watershed_Function(
         dist_file = sub_file_name + str(ID) + "dist.tif"
         dist_filename = os.path.join(subwatershed_dir, dist_file)
         #shp_filename = os.path.join(output_dir, "mypoint.shp")
-        distance_stream = float(extract_value_from_raster_point(dist_filename, albers_x, albers_y))
+        distance_stream = float(extract_value_from_raster_point(dist_filename, albers_x, albers_y,log))
 
     create_shape_from_point((latitude, longitude), (albers_y, albers_x), "mypoint", infile_crs[0], distance_stream )
 

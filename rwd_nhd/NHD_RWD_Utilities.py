@@ -125,24 +125,33 @@ def extract_value_from_raster(rasterfile, pointshapefile):
         return pixel_val    # intval is a tuple, length=1 as we only asked for 1 pixel value
 
 
-def extract_value_from_raster_point(rasterfile, x, y):
-    src_ds = gdal.Open(rasterfile)
-    gt = src_ds.GetGeoTransform()
-    rb = src_ds.GetRasterBand(1)
+def extract_value_from_raster_point(rasterfile, x, y,log):
+    try:
+        src_ds = gdal.Open(rasterfile)
+        gt = src_ds.GetGeoTransform()
+        rb = src_ds.GetRasterBand(1)
 
-    mx = float(x)
-    my = float(y)
+        mx = float(x)
+        my = float(y)
 
-    px = int((mx - gt[0]) / gt[1])  # x pixel
-    py = int((my - gt[3]) / gt[5])  # y pixel
-    pixel_data = rb.ReadAsArray(px, py, 1, 1)
+        px = int((mx - gt[0]) / gt[1])  # x pixel
+        py = int((my - gt[3]) / gt[5])  # y pixel
+        pixel_data = rb.ReadAsArray(px, py, 1, 1)
 
-    # Point does not exist within raster bounds.
-    if pixel_data is None :
-        return -1
+        # Point does not exist within raster bounds.
+        if pixel_data is None :
+            return -1
 
-    pixel_val = pixel_data[0, 0]
-    src_ds = None # Close the dataset
+        pixel_val = pixel_data[0, 0]
+        src_ds = None # Close the dataset
+    except:
+        log.write("Exception in extract value from raster\n")
+        log.write("Rasterfile: " + rasterfile + "\n")
+        log.write("x: %s y: %s\n" % (x,y))
+        log.write("mx: %d my: %d\n" % (mx, my))
+        log.write("px: %d py: %d\n" % (px, py))
+        log.write("pixel_val: %d\n" % pixel_val)
+
     return pixel_val
 
 
