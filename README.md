@@ -12,11 +12,11 @@ A docker image and fork of @nazmussazib's [Rapid Watershed Delineation](https://
 * Run `./scripts/server.sh`
 
 #### Linux
-* Run `curl http://localhost:5000/rwd/-75.276639/39.892986`
+* Run `curl http://localhost:5000/rwd/39.892986/-75.276639`
 
 #### OS X
 * Find the IP of the default VM using `docker-machine ip default`
-* Run `curl http://<default_vm_ip>:5000/rwd/-75.276639/39.892986`
+* Run `curl http://<default_vm_ip>:5000/rwd/39.892986/-75.276639`
 
 ### Environment Variables
 
