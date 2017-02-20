@@ -81,7 +81,7 @@ def run_rwd(lat, lon):
 
         # The Watershed and input coordinates (possibly snapped to stream)
         # are written to disk.  Load them and convert to json
-        wshed_shp_path = os.path.join(output_path, 'New_Point_Watershed.shp')
+        wshed_shp_path = os.path.join(output_path, 'New_Point_Watershed.json')
         input_shp_path = os.path.join(output_path, 'New_Outlet.shp')
 
         output = {
@@ -130,13 +130,14 @@ def run_rwd_nhd(lat, lon):
 
         # The Watershed and input coordinates (possibly snapped to stream)
         # are written to disk.  Load them and convert to json
-        wshed_shp_path = os.path.join(output_path, 'New_Point_Watershed.shp')
+        wshed_shp_path = os.path.join(output_path, 'New_Point_Watershed.json')
         input_shp_path = os.path.join(output_path, 'New_Outlet.shp')
-
+        """
         simplify = str(request.args.get(
             'simplify',
             create_simplify_tolerance_by_area(wshed_shp_path)))
-
+        """
+        simplify = str(request.args.get('simplify', 0.0001))
         output = {
             'watershed': load_json(wshed_shp_path, output_path, simplify,
                                    # From NAD83 / Conus Albers to WGS 84 Latlong
@@ -157,20 +158,23 @@ def run_rwd_nhd(lat, lon):
 
 def load_json(shp_path, output_path, simplify_tolerance=None,
               from_epsg=None, to_epsg=None):
-    name = '%s.json' % uuid.uuid4().hex
-    output_json_path = os.path.join(output_path, name)
-    ogr_cmd = ['ogr2ogr', output_json_path, shp_path, '-f', 'GeoJSON']
+    if (not shp_path.endswith('.json')):
+        name = '%s.json' % uuid.uuid4().hex
+        output_json_path = os.path.join(output_path, name)
+        ogr_cmd = ['ogr2ogr', output_json_path, shp_path, '-f', 'GeoJSON']
 
-    # Simplify the polygon as we convert to JSON if there
-    # is a tolerance setting
-    cmd = ogr_cmd + ['-simplify', simplify_tolerance] if simplify_tolerance \
-        else ogr_cmd
+        # Simplify the polygon as we convert to JSON if there
+        # is a tolerance setting
+        cmd = ogr_cmd + ['-simplify', simplify_tolerance] if simplify_tolerance \
+            else ogr_cmd
 
-    cmd = cmd + ['-t_srs', "EPSG: " + str(from_epsg),
-                 '-a_srs', "EPSG: " + str(to_epsg)] \
-        if from_epsg and to_epsg else cmd
+        cmd = cmd + ['-t_srs', "EPSG: " + str(from_epsg),
+                    '-a_srs', "EPSG: " + str(to_epsg)] \
+            if from_epsg and to_epsg else cmd
 
-    call(cmd)
+        call(cmd)
+    else:
+        output_json_path = shp_path
 
     try:
         with open(output_json_path, 'r') as output_json_file:
