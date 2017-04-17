@@ -19,7 +19,7 @@ from rwd_nhd import NHD_Rapid_Watershed_Delineation
 VERSION = '1.2.1'
 
 # Keep in sync with src/mmw/js/src/draw/utils.js in model-my-watershed.
-MAX_AREA_KM2 = 112700
+MAX_AREA_KM2 = 75000
 
 app = Flask(__name__)
 
