@@ -524,7 +524,7 @@ def Get_Watershed_Attributes(
     else:
        Length_Overland_flow=0.0
 
-    source = ogr.Open(Point_Watershed+".shp", 1)
+    source = ogr.Open(Point_Watershed+".json", 1)
     layer = source.GetLayer()
     layer_defn = layer.GetLayerDefn()
     new_field = ogr.FieldDefn('Area', ogr.OFTReal)

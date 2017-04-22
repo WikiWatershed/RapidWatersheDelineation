@@ -253,7 +253,7 @@ def Point_Watershed_Function(
             #print(cmd)
             os.system(cmd)
 
-        cmd = 'ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp' \
+        cmd = 'ogr2ogr New_Point_Watershed.json -f "GeoJSON" -t_srs "EPSG: 5070" -a_srs "EPSG: 4326" local_subwatershed_dissolve.shp' \
               ' -dialect sqlite' \
               ' -sql "SELECT GRIDCODE, ST_Union(geometry) as geometry' \
               ' FROM local_subwatershed_dissolve"'
@@ -263,7 +263,7 @@ def Point_Watershed_Function(
         print ("Up stream edge was Not reached")
         os.chdir(output_dir)
 
-        cmd = 'ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp' \
+        cmd = 'ogr2ogr New_Point_Watershed.json -f "GeoJSON" -t_srs "EPSG: 5070" -a_srs "EPSG: 4326" local_subwatershed_dissolve.shp' \
               ' -dialect sqlite ' \
               ' -sql "SELECT GRIDCODE, ST_Union(geometry) as geometry' \
               ' FROM local_subwatershed_dissolve GROUP BY GRIDCODE"'
@@ -273,7 +273,7 @@ def Point_Watershed_Function(
     start_time = time.time()
     get_watershed_attributes(
         'New_Outlet.shp',
-        'New_Point_Watershed.shp',
+        'New_Point_Watershed.json',
         ad8_file,
         plen_file,
         tlen_file,

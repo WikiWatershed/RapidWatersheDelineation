@@ -182,8 +182,8 @@ def Point_Watershed_Function(
           merge_watrshed='ogr2ogr -update -append'+ " "+sub_water_file[0]+ " " + sub_water_file[x]
           os.system(merge_watrshed)
         ## dissolve watersheds using ogr2ogr command line
-        dissolve_cmd='ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp -dialect sqlite -sql'+ " "+ ' "SELECT GRIDCODE ,ST_Union(geometry) as geometry FROM '+" "+" 'local_subwatershed_dissolve' " + " " +' GROUP BY GRIDCODE" '
-        print(dissolve_cmd)  
+        dissolve_cmd='ogr2ogr New_Point_Watershed.json -f "GeoJSON" local_subwatershed_dissolve.shp -dialect sqlite -sql'+ " "+ ' "SELECT GRIDCODE ,ST_Union(geometry) as geometry FROM '+" "+" 'local_subwatershed_dissolve' " + " " +' GROUP BY GRIDCODE" '
+        print(dissolve_cmd)
         os.system(dissolve_cmd)
 
     else:
@@ -192,7 +192,7 @@ def Point_Watershed_Function(
         # lc_watershed=os.path.join(Output_dir,New_Gage_watershed_Dissolve+'.shp')
         # polygon_dissolve(New_Gage_watershed_Dissolve,'point_watershed1',projection)
         os.chdir(Output_dir)
-        dissolve_cmd='ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp -dialect sqlite -sql'+ " "+ ' "SELECT GRIDCODE ,ST_Union(geometry) as geometry FROM '+" "+" 'local_subwatershed_dissolve' " + " " +' GROUP BY GRIDCODE" '
+        dissolve_cmd='ogr2ogr New_Point_Watershed.json -f "GeoJSON" local_subwatershed_dissolve.shp -dialect sqlite -sql'+ " "+ ' "SELECT GRIDCODE ,ST_Union(geometry) as geometry FROM '+" "+" 'local_subwatershed_dissolve' " + " " +' GROUP BY GRIDCODE" '
         print(dissolve_cmd)
         os.system(dissolve_cmd)
 
