@@ -84,9 +84,14 @@ def run_rwd(lat, lon):
         wshed_shp_path = os.path.join(output_path, 'New_Point_Watershed.shp')
         input_shp_path = os.path.join(output_path, 'New_Outlet.shp')
 
+        wshed_json = load_json(wshed_shp_path, output_path) if simplify == "0" \
+            else load_json(wshed_shp_path, output_path, simplify)
+
+        input_pt_json = load_json(input_shp_path, output_path)
+
         output = {
-            'watershed': load_json(wshed_shp_path, output_path, simplify),
-            'input_pt': load_json(input_shp_path, output_path)
+            'watershed': wshed_json,
+            'input_pt': input_pt_json
         }
 
         shutil.rmtree(output_path)
@@ -137,13 +142,20 @@ def run_rwd_nhd(lat, lon):
             'simplify',
             create_simplify_tolerance_by_area(wshed_shp_path)))
 
-        output = {
-            'watershed': load_json(wshed_shp_path, output_path, simplify,
-                                   # From NAD83 / Conus Albers to WGS 84 Latlong
-                                   from_epsg=5070, to_epsg=4326),
-            'input_pt': load_json(input_shp_path, output_path,
-                                  # From NAD83 / Conus Albers to WGS 84 Latlong
+        # Reproject from NAD83/Conus Albers to WGS84/LatLng
+        if simplify == "0":
+            watershed_json = load_json(wshed_shp_path, output_path,
+                                       from_epsg=5070, to_epsg=4326)
+        else:
+            watershed_json = load_json(wshed_shp_path, output_path, simplify,
+                                       from_epsg=5070, to_epsg=4326)
+
+        input_pt_json = load_json(input_shp_path, output_path,
                                   from_epsg=5070, to_epsg=4326)
+
+        output = {
+            'watershed': watershed_json,
+            'input_pt': input_pt_json
         }
 
         shutil.rmtree(output_path)
