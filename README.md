@@ -75,3 +75,19 @@ $ git flow release publish 0.1.0
 $ git flow release finish 0.1.0
 $ git push --tags
 ```
+
+## RWD API
+
+### Request
+
+| Name | Method | Description |
+| ---- | ------ | ----------- |
+| /rwd/lat/lng | GET | Run RWD for DRB for client-supplied `<lat>` & `<lng>` coordinates. |
+| /rwd-nhd/lat/lng | GET | Run RWD for NHD for client-supplied `<lat>` & `<lng>` coordinates. |
+
+### Parameters
+
+| Name | Type | Required/Optional | Description |
+| ---- | ---- | ----------------- | ----------- |
+| simplify | number | optional | Simplify tolerance for response GeoJSON. Request unsimplified shape with `simplify=0`. Defaults to `0.0001` for DRB and is [derived from the shape's area](https://github.com/WikiWatershed/rapid-watershed-delineation/blob/1.2.1/src/api/main.py#L195) for NHD when not supplied. |
+| maximum_snap_distance | number | optional | Maximum distance to snap input point. Defaults to `10000` when not supplied. |
