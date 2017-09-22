@@ -1,3 +1,8 @@
+## 1.2.2
+
+- Document `simplify` and `maximum_snap_distance` API parameters
+- Round response watershed coordinates to 5 decimal places
+
 ## 1.2.1
 
 - Fix internally draining gaps

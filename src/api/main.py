@@ -16,10 +16,10 @@ from rwd_drb import Rapid_Watershed_Delineation
 from rwd_nhd import NHD_Rapid_Watershed_Delineation
 
 
-VERSION = '1.2.1'
+VERSION = '1.2.2'
 
 # Keep in sync with src/mmw/js/src/draw/utils.js in model-my-watershed.
-MAX_AREA_KM2 = 112700
+MAX_AREA_KM2 = 75000
 
 app = Flask(__name__)
 
@@ -84,9 +84,14 @@ def run_rwd(lat, lon):
         wshed_shp_path = os.path.join(output_path, 'New_Point_Watershed.shp')
         input_shp_path = os.path.join(output_path, 'New_Outlet.shp')
 
+        wshed_json = load_json(wshed_shp_path, output_path) if simplify == "0" \
+            else load_json(wshed_shp_path, output_path, simplify)
+
+        input_pt_json = load_json(input_shp_path, output_path)
+
         output = {
-            'watershed': load_json(wshed_shp_path, output_path, simplify),
-            'input_pt': load_json(input_shp_path, output_path)
+            'watershed': wshed_json,
+            'input_pt': input_pt_json
         }
 
         shutil.rmtree(output_path)
@@ -137,13 +142,20 @@ def run_rwd_nhd(lat, lon):
             'simplify',
             create_simplify_tolerance_by_area(wshed_shp_path)))
 
-        output = {
-            'watershed': load_json(wshed_shp_path, output_path, simplify,
-                                   # From NAD83 / Conus Albers to WGS 84 Latlong
-                                   from_epsg=5070, to_epsg=4326),
-            'input_pt': load_json(input_shp_path, output_path,
-                                  # From NAD83 / Conus Albers to WGS 84 Latlong
+        # Reproject from NAD83/Conus Albers to WGS84/LatLng
+        if simplify == "0":
+            watershed_json = load_json(wshed_shp_path, output_path,
+                                       from_epsg=5070, to_epsg=4326)
+        else:
+            watershed_json = load_json(wshed_shp_path, output_path, simplify,
+                                       from_epsg=5070, to_epsg=4326)
+
+        input_pt_json = load_json(input_shp_path, output_path,
                                   from_epsg=5070, to_epsg=4326)
+
+        output = {
+            'watershed': watershed_json,
+            'input_pt': input_pt_json
         }
 
         shutil.rmtree(output_path)
@@ -159,7 +171,8 @@ def load_json(shp_path, output_path, simplify_tolerance=None,
               from_epsg=None, to_epsg=None):
     name = '%s.json' % uuid.uuid4().hex
     output_json_path = os.path.join(output_path, name)
-    ogr_cmd = ['ogr2ogr', output_json_path, shp_path, '-f', 'GeoJSON']
+    ogr_cmd = ['ogr2ogr', output_json_path, shp_path, '-f', 'GeoJSON', '-lco',
+               'COORDINATE_PRECISION=5']
 
     # Simplify the polygon as we convert to JSON if there
     # is a tolerance setting

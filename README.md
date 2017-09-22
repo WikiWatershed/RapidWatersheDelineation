@@ -2,7 +2,7 @@
 
 A docker image and fork of @nazmussazib's [Rapid Watershed Delineation](https://github.com/nazmussazib/RapidWatersheDelineation) project, for use in [Model My Watershed](https://github.com/WikiWatershed/model-my-watershed).
 
-[![Travis CI](https://api.travis-ci.org/WikiWatershed/docker-rwd.svg "Build Status on Travis CI")](https://travis-ci.org/WikiWatershed/docker-rwd/)
+[![Travis CI](https://api.travis-ci.org/WikiWatershed/rapid-watershed-delineation.svg "Build Status on Travis CI")](https://travis-ci.org/WikiWatershed/rapid-watershed-delineation/)
 [![Docker Repository on Quay.io](https://quay.io/repository/wikiwatershed/rwd/status "Docker Repository on Quay.io")](https://quay.io/repository/wikiwatershed/rwd)
 [![Apache V2 License](https://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/wikiwatershed/rapid-watershed-delineation/blob/develop/LICENSE)
 
@@ -11,12 +11,12 @@ A docker image and fork of @nazmussazib's [Rapid Watershed Delineation](https://
 * Run `./scripts/update.sh`
 * Run `./scripts/server.sh`
 
-#### Linux
-* Run `curl http://localhost:5000/rwd/-75.276639/39.892986`
+#### Linux & Docker for Mac on macOS
+* Run `curl http://localhost:5000/rwd/39.892986/-75.276639`
 
-#### OS X
+#### Docker Machine on macOS
 * Find the IP of the default VM using `docker-machine ip default`
-* Run `curl http://<default_vm_ip>:5000/rwd/-75.276639/39.892986`
+* Run `curl http://<default_vm_ip>:5000/rwd/39.892986/-75.276639`
 
 ### Environment Variables
 
@@ -75,3 +75,19 @@ $ git flow release publish 0.1.0
 $ git flow release finish 0.1.0
 $ git push --tags
 ```
+
+## RWD API
+
+### Request
+
+| Name | Method | Description |
+| ---- | ------ | ----------- |
+| /rwd/lat/lng | GET | Run RWD for DRB for client-supplied `<lat>` & `<lng>` coordinates. |
+| /rwd-nhd/lat/lng | GET | Run RWD for NHD for client-supplied `<lat>` & `<lng>` coordinates. |
+
+### Parameters
+
+| Name | Type | Required/Optional | Description |
+| ---- | ---- | ----------------- | ----------- |
+| simplify | number | optional | Simplify tolerance for response GeoJSON. Request unsimplified shape with `simplify=0`. Defaults to `0.0001` for DRB and is [derived from the shape's area](https://github.com/WikiWatershed/rapid-watershed-delineation/blob/1.2.1/src/api/main.py#L195) for NHD when not supplied. |
+| maximum_snap_distance | number | optional | Maximum distance to snap input point. Defaults to `10000` when not supplied. |
