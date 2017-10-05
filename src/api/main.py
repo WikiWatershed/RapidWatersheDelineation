@@ -172,7 +172,7 @@ def load_json(shp_path, output_path, simplify_tolerance=None,
     name = '%s.json' % uuid.uuid4().hex
     output_json_path = os.path.join(output_path, name)
     ogr_cmd = ['ogr2ogr', output_json_path, shp_path, '-f', 'GeoJSON', '-lco',
-               'COORDINATE_PRECISION=5']
+               'COORDINATE_PRECISION=6']
 
     # Simplify the polygon as we convert to JSON if there
     # is a tolerance setting
