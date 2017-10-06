@@ -70,10 +70,18 @@ $ git flow release start 0.1.0
 $ vim CHANGELOG.md
 $ vim setup.py
 $ vim src/api/main.py
+$ git add CHANGELOG.md setup.py src/api/main.py
 $ git commit -m "0.1.0"
 $ git flow release publish 0.1.0
 $ git flow release finish 0.1.0
 $ git push --tags
+```
+
+Afterward, push your `develop` and `master` branches to remote using:
+
+```
+$ git push origin develop:develop
+$ git push origin master:master
 ```
 
 ## RWD API
