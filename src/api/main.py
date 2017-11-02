@@ -188,7 +188,8 @@ def load_json(shp_path, output_path, simplify_tolerance=None,
     try:
         with open(output_json_path, 'r') as output_json_file:
             output = json.load(output_json_file)
-            return output
+            output_feature = output.get('features')[0]
+            return output_feature
     except:
         log.exception('Could not get GeoJSON from output.')
         return None
