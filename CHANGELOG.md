@@ -1,3 +1,8 @@
+## 2.0.0
+- Instead of returning a geojson FeatureCollection with
+  a single Feature for the watershed and input_pt output,
+  return a Feature.
+
 ## 1.2.3
 
 - Round response watershed coordinates to 6 decimal places
