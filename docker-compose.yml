@@ -1,0 +1,14 @@
+version: '2'
+services:
+  app:
+    restart: always
+    image: docker-rwd
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+        - $RWD_DATA:/opt/rwd-data
+        - ./src/api:/usr/src/api
+        - ./rwd_nhd:/usr/src/rwd_nhd
+        - ./rwd_drb:/usr/src/rwd_drb
+    command: --workers 4 --timeout 60 --bind 0.0.0.0:5000 --reload main:app

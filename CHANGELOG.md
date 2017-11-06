@@ -1,3 +1,26 @@
+## 2.0.0
+- Instead of returning a geojson FeatureCollection with
+  a single Feature for the watershed and input_pt output,
+  return a Feature.
+
+## 1.2.3
+
+- Round response watershed coordinates to 6 decimal places
+
+## 1.2.2
+
+- Document `simplify` and `maximum_snap_distance` API parameters
+- Round response watershed coordinates to 5 decimal places
+
+## 1.2.1
+
+- Fix internally draining gaps
+- Reduce NHD storage footprint
+- Update NHD simplification tolerance
+
+## 1.2.0
+- Support aggregation of multiple NHD Regions
+
 ## 1.1.1
 - Store input point properties "Lat" and "Lon" in their original LatLng projection
 - Simplify output NHD shapes in proportion to their area
