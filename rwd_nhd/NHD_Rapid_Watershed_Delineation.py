@@ -8,7 +8,7 @@ import fiona
 
 from NHD_RWD_Utilities import generate_moveoutletstostream_command, create_shape_from_point, \
     extract_value_from_raster_point, extract_value_from_raster, get_gauge_watershed_command, get_watershed_attributes, \
-    purge, reproject_point
+    purge, reproject_point, dissolve
 
 
 def Point_Watershed_Function(
@@ -59,7 +59,7 @@ def Point_Watershed_Function(
     # extract ID from gage watershed raster saves significant amount of time, that is polygon searching takes long
     # amount of time however extract raster value from raster does not takes
     fg = int(extract_value_from_raster_point(
-        gage_watershed_rasterfile, albers_x, albers_y))
+        gage_watershed_rasterfile, albers_x, albers_y, log))
     ID = fg
     print(ID)
     internaldrain=False
@@ -71,7 +71,7 @@ def Point_Watershed_Function(
         #  There is no joining of upstream watersheds as this is applied only for points not handled by the preprocessed gage watersheds and these points do not have upstream watersheds
         regionsfile = os.path.join(dir_main, "regions.tif")
         ID = int(extract_value_from_raster_point(
-            regionsfile, albers_x, albers_y))
+            regionsfile, albers_x, albers_y, log))
         if ID is None or ID < 1:
             raise Exception('Point located outside the watershed.')
         internaldrain=True
@@ -89,7 +89,7 @@ def Point_Watershed_Function(
         dist_file = sub_file_name + str(ID) + "dist.tif"
         dist_filename = os.path.join(subwatershed_dir, dist_file)
         #shp_filename = os.path.join(output_dir, "mypoint.shp")
-        distance_stream = float(extract_value_from_raster_point(dist_filename, albers_x, albers_y))
+        distance_stream = float(extract_value_from_raster_point(dist_filename, albers_x, albers_y,log))
 
     create_shape_from_point((latitude, longitude), (albers_y, albers_x), "mypoint", infile_crs[0], distance_stream )
 
@@ -177,13 +177,14 @@ def Point_Watershed_Function(
     #print(cmd)
     os.system(cmd)
 
-    cmd = 'ogr2ogr local_subwatershed_dissolve.shp local_subwatershed.shp' \
-          ' -dialect sqlite' \
-          ' -sql "SELECT GRIDCODE, ST_Union(geometry) as geometry' \
-          ' FROM local_subwatershed GROUP BY GRIDCODE"' \
-          ' -nln results -overwrite'
+    dissolve('local_subwatershed.shp', 'local_subwatershed_dissolve.shp')
+    #cmd = 'ogr2ogr local_subwatershed_dissolve.shp local_subwatershed.shp' \
+    #      ' -dialect sqlite' \
+    #      ' -sql "SELECT GRIDCODE, ST_Union(geometry) as geometry' \
+    #      ' FROM local_subwatershed GROUP BY GRIDCODE"' \
+    #      ' -nln results -overwrite'
     #print(cmd)
-    os.system(cmd)
+    #os.system(cmd)
 
     log.write("Extract subwatershed %s seconds \n" % (time.time() - start_time))
     start_time = time.time()
@@ -252,23 +253,25 @@ def Point_Watershed_Function(
             cmd = 'ogr2ogr -update -append' + " "+sub_water_file[0] + " " + sub_water_file[x]
             #print(cmd)
             os.system(cmd)
-
-        cmd = 'ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp' \
-              ' -dialect sqlite' \
-              ' -sql "SELECT GRIDCODE, ST_Union(geometry) as geometry' \
-              ' FROM local_subwatershed_dissolve"'
+        
+		dissolve('local_subwatershed_dissolve.shp', 'New_Point_Watershed.shp', groupby_gridcode=False)
+        #cmd = 'ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp' \
+        #      ' -dialect sqlite' \
+        #      ' -sql "SELECT GRIDCODE, ST_Union(geometry) as geometry' \
+        #      ' FROM local_subwatershed_dissolve"'
         #print(cmd)
-        os.system(cmd)
+        #os.system(cmd)
     else:
         print ("Up stream edge was Not reached")
-        os.chdir(output_dir)
+        #os.chdir(output_dir)
 
-        cmd = 'ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp' \
-              ' -dialect sqlite ' \
-              ' -sql "SELECT GRIDCODE, ST_Union(geometry) as geometry' \
-              ' FROM local_subwatershed_dissolve GROUP BY GRIDCODE"'
+        dissolve('local_subwatershed_dissolve.shp', 'New_Point_Watershed.shp')
+        #cmd = 'ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp' \
+        #      ' -dialect sqlite ' \
+        #      ' -sql "SELECT GRIDCODE, ST_Union(geometry) as geometry' \
+        #      ' FROM local_subwatershed_dissolve GROUP BY GRIDCODE"'
         #print(cmd)
-        os.system(cmd)
+        #os.system(cmd)
     log.write("Join upstream watersheds %s seconds \n" % (time.time() - start_time))
     start_time = time.time()
     get_watershed_attributes(

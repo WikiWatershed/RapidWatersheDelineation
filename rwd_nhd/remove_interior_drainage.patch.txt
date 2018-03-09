@@ -1,0 +1,116 @@
+diff --git a/rwd_nhd/NHD_RWD_Utilities.py b/rwd_nhd/NHD_RWD_Utilities.py
+index cb39182..9c41be2 100644
+--- a/rwd_nhd/NHD_RWD_Utilities.py
++++ b/rwd_nhd/NHD_RWD_Utilities.py
+@@ -2,6 +2,7 @@ import os
+ import re
+ import os.path
+ import time
++import itertools
+ 
+ import pandas as pd
+ import numpy as np
+@@ -9,7 +10,12 @@ from shapely.geometry import Point
+ from fiona import collection
+ from osgeo import gdal, ogr
+ import osr
+-from shapely.geometry import mapping
++
++from shapely.geometry import (mapping,
++                              shape,
++                              Polygon,
++                              MultiPolygon,)
++from shapely.ops import cascaded_union
+ 
+ 
+ def create_buffer(inputfn, outputBufferfn, bufferDist):
+@@ -281,3 +287,35 @@ def get_watershed_attributes(outlet_point, point_watershed,
+     print("Area time %s seconds ---" % (time.time() - start_time))
+     source = None
+ 
++def dissolve(input_filename, output_filename, groupby_gridcode=True):
++    with collection(input_filename, 'r') as input:
++        driver = input.driver
++        crs = input.crs
++        schema = input.schema.copy()
++        with collection(output_filename,
++                        'w',
++                        driver=driver,
++                        crs=crs,
++                        schema=schema) as output:
++            def exterior_ring(polygon):
++                return Polygon(polygon.exterior)
++
++            def dissolve_features(features, gridcode=None):
++                shapes = [shape(f['geometry']) for f in features]
++                merged_shape = cascaded_union(shapes)
++                holefree_shape = MultiPolygon([exterior_ring(poly) for poly in merged_shape.geoms]) \
++                                 if merged_shape.geom_type is 'MultiPolygon' \
++                                 else exterior_ring(merged_shape)
++
++                output.write({
++                    'GRIDCODE': gridcode,
++                    'properties': { 'GRIDCODE': gridcode },
++                    'geometry': mapping(holefree_shape)
++                })
++
++            if groupby_gridcode:
++                sorted_features = sorted(input, key=lambda x: x['properties']['GRIDCODE'])
++                for gridcode, gridcode_features in itertools.groupby(sorted_features, key=lambda x: x['properties']['GRIDCODE']):
++                    dissolve_features(gridcode_features, gridcode=gridcode)
++            else:
++                dissolve_features(input)
+diff --git a/rwd_nhd/NHD_Rapid_Watershed_Delineation.py b/rwd_nhd/NHD_Rapid_Watershed_Delineation.py
+index 3446230..380d495 100644
+--- a/rwd_nhd/NHD_Rapid_Watershed_Delineation.py
++++ b/rwd_nhd/NHD_Rapid_Watershed_Delineation.py
+@@ -8,7 +8,7 @@ import fiona
+ 
+ from NHD_RWD_Utilities import generate_moveoutletstostream_command, create_shape_from_point, \
+     extract_value_from_raster_point, extract_value_from_raster, get_gauge_watershed_command, get_watershed_attributes, \
+-    purge, reproject_point
++    purge, reproject_point, dissolve
+ 
+ 
+ def Point_Watershed_Function(
+@@ -177,13 +177,7 @@ def Point_Watershed_Function(
+     #print(cmd)
+     os.system(cmd)
+ 
+-    cmd = 'ogr2ogr local_subwatershed_dissolve.shp local_subwatershed.shp' \
+-          ' -dialect sqlite' \
+-          ' -sql "SELECT GRIDCODE, ST_Union(geometry) as geometry' \
+-          ' FROM local_subwatershed GROUP BY GRIDCODE"' \
+-          ' -nln results -overwrite'
+-    #print(cmd)
+-    os.system(cmd)
++    dissolve('local_subwatershed.shp', 'local_subwatershed_dissolve.shp')
+ 
+     log.write("Extract subwatershed %s seconds \n" % (time.time() - start_time))
+     start_time = time.time()
+@@ -253,22 +247,13 @@ def Point_Watershed_Function(
+             #print(cmd)
+             os.system(cmd)
+ 
+-        cmd = 'ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp' \
+-              ' -dialect sqlite' \
+-              ' -sql "SELECT GRIDCODE, ST_Union(geometry) as geometry' \
+-              ' FROM local_subwatershed_dissolve"'
+-        #print(cmd)
+-        os.system(cmd)
++        dissolve('local_subwatershed_dissolve.shp', 'New_Point_Watershed.shp', groupby_gridcode=False)
+     else:
+         print ("Up stream edge was Not reached")
+         os.chdir(output_dir)
+ 
+-        cmd = 'ogr2ogr New_Point_Watershed.shp local_subwatershed_dissolve.shp' \
+-              ' -dialect sqlite ' \
+-              ' -sql "SELECT GRIDCODE, ST_Union(geometry) as geometry' \
+-              ' FROM local_subwatershed_dissolve GROUP BY GRIDCODE"'
+-        #print(cmd)
+-        os.system(cmd)
++        dissolve('local_subwatershed_dissolve.shp', 'New_Point_Watershed.shp')
++
+     log.write("Join upstream watersheds %s seconds \n" % (time.time() - start_time))
+     start_time = time.time()
+     get_watershed_attributes(

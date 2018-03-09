@@ -2,6 +2,7 @@ import os
 import re
 import os.path
 import time
+import itertools
 
 import pandas as pd
 import numpy as np
@@ -9,7 +10,12 @@ from shapely.geometry import Point
 from fiona import collection
 from osgeo import gdal, ogr
 import osr
-from shapely.geometry import mapping
+
+from shapely.geometry import (mapping,
+                              shape,
+                              Polygon,
+                              MultiPolygon,)
+from shapely.ops import cascaded_union
 
 
 def create_buffer(inputfn, outputBufferfn, bufferDist):
@@ -125,24 +131,33 @@ def extract_value_from_raster(rasterfile, pointshapefile):
         return pixel_val    # intval is a tuple, length=1 as we only asked for 1 pixel value
 
 
-def extract_value_from_raster_point(rasterfile, x, y):
-    src_ds = gdal.Open(rasterfile)
-    gt = src_ds.GetGeoTransform()
-    rb = src_ds.GetRasterBand(1)
+def extract_value_from_raster_point(rasterfile, x, y,log):
+    try:
+        src_ds = gdal.Open(rasterfile)
+        gt = src_ds.GetGeoTransform()
+        rb = src_ds.GetRasterBand(1)
 
-    mx = float(x)
-    my = float(y)
+        mx = float(x)
+        my = float(y)
 
-    px = int((mx - gt[0]) / gt[1])  # x pixel
-    py = int((my - gt[3]) / gt[5])  # y pixel
-    pixel_data = rb.ReadAsArray(px, py, 1, 1)
+        px = int((mx - gt[0]) / gt[1])  # x pixel
+        py = int((my - gt[3]) / gt[5])  # y pixel
+        pixel_data = rb.ReadAsArray(px, py, 1, 1)
 
-    # Point does not exist within raster bounds.
-    if pixel_data is None :
-        return -1
+        # Point does not exist within raster bounds.
+        if pixel_data is None :
+            return -1
 
-    pixel_val = pixel_data[0, 0]
-    src_ds = None # Close the dataset
+        pixel_val = pixel_data[0, 0]
+        src_ds = None # Close the dataset
+    except:
+        log.write("Exception in extract value from raster\n")
+        log.write("Rasterfile: " + rasterfile + "\n")
+        log.write("x: %s y: %s\n" % (x,y))
+        log.write("mx: %d my: %d\n" % (mx, my))
+        log.write("px: %d py: %d\n" % (px, py))
+        log.write("pixel_val: %d\n" % pixel_val)
+
     return pixel_val
 
 
@@ -281,3 +296,35 @@ def get_watershed_attributes(outlet_point, point_watershed,
     print("Area time %s seconds ---" % (time.time() - start_time))
     source = None
 
+def dissolve(input_filename, output_filename, groupby_gridcode=True):
+    with collection(input_filename, 'r') as input:
+        driver = input.driver
+        crs = input.crs
+        schema = input.schema.copy()
+        with collection(output_filename,
+                        'w',
+                        driver=driver,
+                        crs=crs,
+                        schema=schema) as output:
+            def exterior_ring(polygon):
+                return Polygon(polygon.exterior)
+
+            def dissolve_features(features, gridcode=None):
+                shapes = [shape(f['geometry']) for f in features]
+                merged_shape = cascaded_union(shapes)
+                holefree_shape = MultiPolygon([exterior_ring(poly) for poly in merged_shape.geoms]) \
+                                 if merged_shape.geom_type is 'MultiPolygon' \
+                                 else exterior_ring(merged_shape)
+
+                output.write({
+                    'GRIDCODE': gridcode,
+                    'properties': { 'GRIDCODE': gridcode },
+                    'geometry': mapping(holefree_shape)
+                })
+
+            if groupby_gridcode:
+                sorted_features = sorted(input, key=lambda x: x['properties']['GRIDCODE'])
+                for gridcode, gridcode_features in itertools.groupby(sorted_features, key=lambda x: x['properties']['GRIDCODE']):
+                    dissolve_features(gridcode_features, gridcode=gridcode)
+            else:
+                dissolve_features(input)
