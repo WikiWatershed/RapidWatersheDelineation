@@ -11,8 +11,7 @@ fi
 
 set -x
 
-docker-compose run \
+docker compose run \
     --rm \
-    -e RWD_DATA=$RWD_DATA \
     --entrypoint /bin/bash \
     app
