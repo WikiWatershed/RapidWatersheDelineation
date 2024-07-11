@@ -1,0 +1,28 @@
+name: ci
+
+on:
+    push:
+      branches: [ develop ]
+    pull_request:
+      branches: [ develop ]
+
+env:
+    RWD_DATA: /tmp/rwd
+
+jobs:
+    docker:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
+
+            - name: Setup Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Create empty folder for RWD_DATA
+              run: |
+                mkdir -p $RWD_DATA
+
+            - name: Build image
+              run: |
+                ./scripts/update.sh
