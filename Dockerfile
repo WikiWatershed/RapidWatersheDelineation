@@ -1,4 +1,4 @@
-FROM quay.io/wikiwatershed/taudem:5.3.8
+FROM ghcr.io/wikiwatershed/taudem:5.3.8-xenial
 
 MAINTAINER Azavea <systems@azavea.com>
 
