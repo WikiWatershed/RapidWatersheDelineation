@@ -1,3 +1,8 @@
+## 3.0.0
+
+- Change base image to TauDEM 5.3.8-xenial, to be built on Ubuntu 16.04 instead
+  of 14.04. Also update to latest supported Python 2.7.
+
 ## 2.0.0
 - Instead of returning a geojson FeatureCollection with
   a single Feature for the watershed and input_pt output,

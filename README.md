@@ -2,9 +2,14 @@
 
 A docker image and fork of @nazmussazib's [Rapid Watershed Delineation](https://github.com/nazmussazib/RapidWatersheDelineation) project, for use in [Model My Watershed](https://github.com/WikiWatershed/model-my-watershed).
 
-[![Travis CI](https://api.travis-ci.org/WikiWatershed/rapid-watershed-delineation.svg "Build Status on Travis CI")](https://travis-ci.org/WikiWatershed/rapid-watershed-delineation/)
-[![Docker Repository on Quay.io](https://quay.io/repository/wikiwatershed/rwd/status "Docker Repository on Quay.io")](https://quay.io/repository/wikiwatershed/rwd)
+[![Docker Repository on GitHub Container Registry](https://ghcr-badge.egpl.dev/WikiWatershed/rwd/latest_tag?color=%2344cc11&ignore=sha256*&label=version)](https://github.com/WikiWatershed/rapid-watershed-delineation/pkgs/container/rwd)
 [![Apache V2 License](https://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/wikiwatershed/rapid-watershed-delineation/blob/develop/LICENSE)
+
+### Quick Start
+
+```
+docker run --rm -ti ghcr.io/wikiwatershed/rwd
+```
 
 ### Getting started
 * Define environment variables (see below)
@@ -69,12 +74,8 @@ To create a new release, use the following git commands:
 $ git flow release start 0.1.0
 $ vim CHANGELOG.md
 $ vim setup.py
-$ vim src/api/main.py
-$ git add CHANGELOG.md setup.py src/api/main.py
 $ git commit -m "0.1.0"
-$ git flow release publish 0.1.0
-$ git flow release finish 0.1.0
-$ git push --tags
+$ git flow release finish -p 0.1.0
 ```
 
 Afterward, push your `develop` and `master` branches to remote using:
