@@ -2,7 +2,7 @@
 
 A docker image and fork of @nazmussazib's [Rapid Watershed Delineation](https://github.com/nazmussazib/RapidWatersheDelineation) project, for use in [Model My Watershed](https://github.com/WikiWatershed/model-my-watershed).
 
-[![Docker Repository on GitHub Container Registry](https://ghcr-badge.egpl.dev/WikiWatershed/rwd/latest_tag?color=%2344cc11&ignore=sha256*&label=version)](https://github.com/WikiWatershed/rapid-watershed-delineation/pkgs/container/rwd)
+[![Docker Repository on GitHub Container Registry](https://ghcr-badge.egpl.dev/WikiWatershed/rwd/latest_tag?color=%2344cc11&ignore=sha256*%2Clatest&label=version)](https://github.com/WikiWatershed/rapid-watershed-delineation/pkgs/container/rwd)
 [![Apache V2 License](https://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/wikiwatershed/rapid-watershed-delineation/blob/develop/LICENSE)
 
 ### Quick Start
